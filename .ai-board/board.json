@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 37,
+  "next_id": 39,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T06:53:09+00:00",
+  "updated_at": "2026-06-03T07:20:52+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T06:52:56+00:00",
+      "updated_at": "2026-06-03T07:20:41+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T06:52:56+00:00"
+      "released_at": "2026-06-03T07:20:41+00:00"
     }
   ],
   "tasks": [
@@ -122,6 +122,35 @@
       "leftovers": "",
       "created_at": "2026-06-03T02:33:34+00:00",
       "updated_at": "2026-06-03T02:33:34+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0038",
+      "title": "由 Claude Code 执行 devnu11 主动 DNS 子域名枚举",
+      "description": "",
+      "priority": "P0",
+      "status": "inbox",
+      "lane": "实战验证",
+      "source": "user",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [
+        "dicts",
+        "docs",
+        "projects"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "确认 DNS 授权窗口、DNS 并发/速率、resolver 和停止条件",
+        "Claude Code 使用 dicts/curated/subdomains-main.txt 对 devnu11.cn 授权子域范围执行受控主动 DNS 枚举",
+        "结果回填 projects/devnu11-cn-e2e/inventory.md、evidence.md、progress.md、review.md，并记录字典、resolver、速率和泛解析去噪情况"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-03T07:20:19+00:00",
+      "updated_at": "2026-06-03T07:20:19+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -1377,6 +1406,41 @@
       "started_at": "2026-06-03T06:49:43+00:00",
       "completed_at": "2026-06-03T06:52:56+00:00",
       "archived_at": "2026-06-03T06:53:09+00:00"
+    },
+    {
+      "id": "T-0037",
+      "title": "修正泛解析主动 DNS 子域名扫描执行口径",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "实战验证",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e/scope.md"
+      ],
+      "verify_scope": [
+        "docs",
+        "projects"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "scope.md 明确 *.devnu11.cn 泛解析范围应执行主动 DNS 子域名枚举",
+        "主动 DNS 前置条件与 HTTP/端口/API 前置条件分层，不再要求实际 URL 才能做 DNS 子域名扫描",
+        "docs/当前状态.md 同步新的阻塞条件和下一步建议"
+      ],
+      "verification": "已修正 projects/devnu11-cn-e2e/scope.md：明确 *.devnu11.cn 泛解析/通配范围应执行主动 DNS 子域名枚举；主动 DNS 不再等待实际访问 URL，只需确认 DNS 授权窗口、DNS 并发/速率、resolver 和停止条件；HTTP/端口/路径/API 仍等待实际 URL、HTTP 速率和授权窗口。已同步 docs/当前状态.md，并新增 T-0038 作为拆分后的主动 DNS 执行任务。",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-03T07:17:56+00:00",
+      "updated_at": "2026-06-03T07:20:52+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T07:18:32+00:00",
+      "started_at": "2026-06-03T07:18:32+00:00",
+      "completed_at": "2026-06-03T07:20:41+00:00",
+      "archived_at": "2026-06-03T07:20:52+00:00"
     }
   ]
 }
