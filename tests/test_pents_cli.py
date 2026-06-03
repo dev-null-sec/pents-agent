@@ -127,6 +127,67 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("chain=incomplete", evidence)
         self.assertIn("evidence_type=js", evidence)
 
+    def test_report_summarizes_findings_evidence_and_gaps(self) -> None:
+        self.run_cli("new", "cli-test", "--target", "https://example.test")
+        self.run_cli(
+            "finding",
+            "cli-test",
+            "Confirmed SSRF",
+            "--id",
+            "F-0001",
+            "--severity",
+            "High",
+            "--status",
+            "confirmed",
+            "--target",
+            "/admin/callback",
+        )
+        self.run_cli(
+            "finding",
+            "cli-test",
+            "Candidate IDOR",
+            "--id",
+            "F-0002",
+            "--severity",
+            "Medium",
+            "--status",
+            "candidate",
+            "--target",
+            "/api/v1/users/1",
+        )
+        self.run_cli(
+            "evidence",
+            "cli-test",
+            "requests/ssrf.txt",
+            "--type",
+            "request",
+            "--finding",
+            "F-0001",
+            "--source-url",
+            "https://example.test/admin/callback",
+            "--sha256",
+            "abc123",
+        )
+        finding = self.project / "findings" / "F-0001.md"
+        finding.write_text(
+            finding.read_text(encoding="utf-8").replace(
+                "1. \n2. \n3. ",
+                "1. 打开 `/admin/callback`\n2. 发送回调请求\n3. 观察服务端响应",
+            ),
+            encoding="utf-8",
+        )
+
+        self.run_cli("report", "cli-test", "--tester", "codex")
+        report = self.read_project("report.md")
+
+        self.assertIn("| F-0001 | Confirmed SSRF | High | confirmed | `E-0002` |", report)
+        self.assertIn("| F-0002 | Candidate IDOR | Medium | candidate | 缺失 |", report)
+        self.assertIn("## 严重程度统计", report)
+        self.assertIn("| High | 1 |", report)
+        self.assertIn("| Medium | 1 |", report)
+        self.assertIn("## 证据与缺口", report)
+        self.assertIn("| F-0002 | candidate | 缺失 | 缺少证据；缺少复现步骤 |", report)
+
     def test_run_new_creates_numbered_run_templates(self) -> None:
         self.run_cli("new", "cli-test", "--target", "https://example.test")
 

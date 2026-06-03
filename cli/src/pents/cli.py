@@ -360,6 +360,20 @@ def copy_named_template(root: Path, template_name: str, target: Path, values: di
     write_text(target, content)
 
 
+def append_section_table_row(content: str, section: str, row: str) -> str:
+    index = content.find(section)
+    if index < 0:
+        return content.rstrip() + "\n\n" + row.rstrip() + "\n"
+    match = re.search(r"^\| .* \|$", content[index:], re.MULTILINE)
+    if not match:
+        return content.rstrip() + "\n\n" + row.rstrip() + "\n"
+    table_start = index + match.start()
+    table_end = content.find("\n\n", table_start)
+    if table_end < 0:
+        table_end = len(content)
+    return content[:table_end].rstrip("\n") + "\n" + row.rstrip("\n") + content[table_end:]
+
+
 def cmd_new(args: argparse.Namespace) -> int:
     root = workspace_root()
     project = project_path(root, args.name)
@@ -451,8 +465,7 @@ def cmd_evidence(args: argparse.Namespace) -> int:
         f"| {table_cell(evidence_id)} | {table_cell(args.type)} | {table_cell(args.target or '')} | "
         f"{table_cell(args.finding or '')} | {table_cell(args.ref)} | {table_cell(notes)} |\n"
     )
-    with path.open("a", encoding="utf-8") as file:
-        file.write("\n" + line)
+    write_text(path, append_section_table_row(read_text(path), "## 证据列表", line))
     if missing:
         print(f"WARNING: evidence chain incomplete: missing {', '.join(missing)}")
     print(evidence_id)
@@ -469,6 +482,7 @@ def cmd_finding(args: argparse.Namespace) -> int:
         "finding_id": finding_id,
         "project_name": args.project,
         "title": args.title,
+        "status": args.status,
         "severity": args.severity,
         "cvss": args.cvss or "",
         "affected_target": args.target or "",
@@ -568,6 +582,125 @@ def cmd_static_js(args: argparse.Namespace) -> int:
     return 0
 
 
+def heading_title(text: str, prefix: str) -> str:
+    for line in text.splitlines():
+        if line.startswith(prefix):
+            return line.replace(prefix, "", 1).strip()
+    return ""
+
+
+def markdown_section(text: str, heading: str) -> str:
+    match = re.search(rf"^## {re.escape(heading)}\s*$", text, re.MULTILINE)
+    if not match:
+        return ""
+    next_match = re.search(r"^## .*$", text[match.end() :], re.MULTILINE)
+    end = match.end() + next_match.start() if next_match else len(text)
+    return text[match.end() : end].strip()
+
+
+def split_table_row(line: str) -> list[str]:
+    text = line.strip()
+    if text.startswith("|"):
+        text = text[1:]
+    if text.endswith("|"):
+        text = text[:-1]
+    cells: list[str] = []
+    current: list[str] = []
+    escaped = False
+    for char in text:
+        if escaped:
+            current.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == "|":
+            cells.append("".join(current).strip())
+            current = []
+        else:
+            current.append(char)
+    cells.append("".join(current).strip())
+    return cells
+
+
+def table_rows(section: str) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = split_table_row(stripped)
+        if not cells or all(set(cell) <= {"-", " "} for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def evidence_index(project: Path) -> dict[str, dict[str, str]]:
+    path = project / "evidence.md"
+    if not path.exists():
+        return {}
+    rows = table_rows(read_text(path))
+    evidence: dict[str, dict[str, str]] = {}
+    for cells in rows:
+        if len(cells) < 6 or not re.fullmatch(r"E-\d{4}", cells[0]):
+            continue
+        evidence[cells[0]] = {
+            "type": cells[1],
+            "target": cells[2],
+            "finding": cells[3],
+            "ref": cells[4],
+            "notes": cells[5],
+        }
+    return evidence
+
+
+def finding_has_repro_steps(text: str) -> bool:
+    section = markdown_section(text, "复现步骤")
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not re.match(r"^\d+\.\s*", stripped):
+            continue
+        if re.sub(r"^\d+\.\s*", "", stripped).strip():
+            return True
+    return False
+
+
+def evidence_ids_for_finding(finding_id: str, text: str, evidence: dict[str, dict[str, str]]) -> list[str]:
+    ids = set(re.findall(r"\bE-\d{4}\b", markdown_section(text, "证据")))
+    for evidence_id, item in evidence.items():
+        if item.get("finding") == finding_id:
+            ids.add(evidence_id)
+    return sorted(ids)
+
+
+def evidence_refs(ids: list[str]) -> str:
+    return ", ".join(f"`{evidence_id}`" for evidence_id in ids) if ids else "缺失"
+
+
+def finding_gap_notes(ids: list[str], text: str, evidence: dict[str, dict[str, str]]) -> list[str]:
+    gaps: list[str] = []
+    if not ids:
+        gaps.append("缺少证据")
+    if not finding_has_repro_steps(text):
+        gaps.append("缺少复现步骤")
+    if any("chain=incomplete" in evidence.get(evidence_id, {}).get("notes", "") for evidence_id in ids):
+        gaps.append("证据链不完整")
+    return gaps
+
+
+def severity_stat_rows(severities: list[str]) -> list[str]:
+    counts: dict[str, int] = {}
+    for severity in severities:
+        key = severity or "未标注"
+        counts[key] = counts.get(key, 0) + 1
+    order = ["Critical", "High", "Medium", "Low", "Info", "Informational", "未标注"]
+    keys = [key for key in order if key in counts]
+    keys.extend(sorted(key for key in counts if key not in keys))
+    rows = ["| 严重程度 | 数量 |", "| --- | --- |"]
+    rows.extend(f"| {table_cell(key)} | {counts[key]} |" for key in keys)
+    return rows
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     root = workspace_root()
     project = ensure_project(root, args.project)
@@ -581,14 +714,33 @@ def cmd_report(args: argparse.Namespace) -> int:
     content = fill_template(read_text(template_dir(root) / "report.md"), values)
     findings = sorted((project / "findings").glob("*.md"))
     if findings:
-        rows = ["| 编号 | 标题 | 严重程度 | 状态 |", "| --- | --- | --- | --- |"]
+        evidence = evidence_index(project)
+        summary_rows = ["| 编号 | 标题 | 严重程度 | 状态 | 证据 |", "| --- | --- | --- | --- | --- |"]
+        gap_rows = ["| 编号 | 状态 | 证据引用 | 缺口提示 |", "| --- | --- | --- | --- |"]
+        severities: list[str] = []
         for finding in findings:
             text = read_text(finding)
-            title = text.splitlines()[0].replace("# 漏洞记录：", "").strip() if text.splitlines() else finding.stem
+            title = heading_title(text, "# 漏洞记录：") or finding.stem
+            finding_id = field_value(text, "编号") or finding.stem
             severity = field_value(text, "严重程度")
             status = field_value(text, "状态")
-            rows.append(f"| {finding.stem} | {title} | {severity} | {status} |")
-        content = replace_section_table(content, "## 漏洞汇总", rows)
+            severities.append(severity)
+            ids = evidence_ids_for_finding(finding_id, text, evidence)
+            summary_rows.append(
+                f"| {table_cell(finding_id)} | {table_cell(title)} | {table_cell(severity)} | "
+                f"{table_cell(status)} | {table_cell(evidence_refs(ids))} |"
+            )
+            gaps = finding_gap_notes(ids, text, evidence)
+            if gaps:
+                gap_rows.append(
+                    f"| {table_cell(finding_id)} | {table_cell(status)} | {table_cell(evidence_refs(ids))} | "
+                    f"{table_cell('；'.join(gaps))} |"
+                )
+        if len(gap_rows) == 2:
+            gap_rows.append("| 无 |  |  | 无 |")
+        content = replace_section_table(content, "## 漏洞汇总", summary_rows)
+        content = replace_section_table(content, "## 严重程度统计", severity_stat_rows(severities))
+        content = replace_section_table(content, "## 证据与缺口", gap_rows)
     target = project / "report.md"
     write_text(target, content)
     print(f"Created report: {target}")
@@ -647,12 +799,10 @@ def replace_section_table(content: str, section: str, rows: list[str]) -> str:
     index = content.find(section)
     if index < 0:
         return content
-    # Match Chinese (| 编号 |) or English (| ID |) table headers
-    table_start = content.find("| 编号 |", index)
-    if table_start < 0:
-        table_start = content.find("| ID |", index)
-    if table_start < 0:
+    match = re.search(r"^\| .* \|$", content[index:], re.MULTILINE)
+    if not match:
         return content
+    table_start = index + match.start()
     table_end = content.find("\n\n", table_start)
     if table_end < 0:
         table_end = len(content)
@@ -701,6 +851,7 @@ def build_parser() -> argparse.ArgumentParser:
     finding_parser.add_argument("project")
     finding_parser.add_argument("title")
     finding_parser.add_argument("--id", default="")
+    finding_parser.add_argument("--status", default="待确认")
     finding_parser.add_argument("--severity", default="Medium")
     finding_parser.add_argument("--cvss", default="")
     finding_parser.add_argument("--target", default="")

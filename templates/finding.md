@@ -4,7 +4,7 @@
 
 - 编号：{{finding_id}}
 - 项目：{{project_name}}
-- 状态：待确认
+- 状态：{{status}}
 - 严重程度：{{severity}}
 - CVSS 评分：{{cvss}}
 - 影响目标：{{affected_target}}
@@ -56,4 +56,3 @@
 
 - 未测试范围外目标。
 - 未执行破坏性操作。
-

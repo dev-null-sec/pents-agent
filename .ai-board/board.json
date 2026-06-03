@@ -6,7 +6,7 @@
   },
   "next_id": 37,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T04:04:33+00:00",
+  "updated_at": "2026-06-03T06:22:49+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T04:04:26+00:00",
+      "updated_at": "2026-06-03T06:22:41+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T04:04:26+00:00"
+      "released_at": "2026-06-03T06:22:41+00:00"
     }
   ],
   "tasks": [
@@ -100,36 +100,6 @@
       "leftovers": "",
       "created_at": "2026-06-02T09:40:02+00:00",
       "updated_at": "2026-06-02T09:40:02+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0013",
-      "title": "升级 pents report 汇总能力",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "CLI",
-      "source": "user",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [
-        "cli",
-        "docs",
-        "templates",
-        "tests"
-      ],
-      "depends_on": [],
-      "acceptance": [
-        "pents report 汇总 finding 严重级别统计、evidence 引用和证据缺口",
-        "报告能列出 candidate/confirmed 状态并提示缺少复现步骤或证据的 finding",
-        "新增测试覆盖多个 finding 汇总"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-02T09:40:03+00:00",
-      "updated_at": "2026-06-02T09:40:03+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     },
@@ -1350,6 +1320,45 @@
       "started_at": "2026-06-03T04:01:23+00:00",
       "completed_at": "2026-06-03T04:04:26+00:00",
       "archived_at": "2026-06-03T04:04:33+00:00"
+    },
+    {
+      "id": "T-0013",
+      "title": "升级 pents report 汇总能力",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "CLI",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "cli/src/pents/cli.py",
+        "docs/当前状态.md",
+        "templates/report.md",
+        "tests/test_pents_cli.py"
+      ],
+      "verify_scope": [
+        "cli",
+        "docs",
+        "templates",
+        "tests"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "pents report 汇总 finding 严重级别统计、evidence 引用和证据缺口",
+        "报告能列出 candidate/confirmed 状态并提示缺少复现步骤或证据的 finding",
+        "新增测试覆盖多个 finding 汇总"
+      ],
+      "verification": "已实现 pents report 汇总能力：漏洞汇总增加证据列，新增严重程度统计和证据与缺口表；report 会从 finding 与 evidence.md 关联证据编号，提示缺少证据、缺少复现步骤和证据链不完整；已新增多个 finding 的回归测试；已运行 uv run --project cli python -X utf8 -m unittest discover -s tests，9 个测试通过。",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-02T09:40:03+00:00",
+      "updated_at": "2026-06-03T06:22:49+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T06:16:13+00:00",
+      "started_at": "2026-06-03T06:16:13+00:00",
+      "completed_at": "2026-06-03T06:22:41+00:00",
+      "archived_at": "2026-06-03T06:22:49+00:00"
     }
   ]
 }
