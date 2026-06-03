@@ -46,6 +46,7 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("review-agent-output", result.stdout)
         self.assertIn("suggest-skills", result.stdout)
         self.assertIn("doctor-recon", result.stdout)
+        self.assertIn("active-dns", result.stdout)
 
     def test_new_copies_project_templates(self) -> None:
         self.run_cli("new", "cli-test", "--target", "https://example.test")
@@ -336,6 +337,53 @@ class PentsCliTests(unittest.TestCase):
             self.assertIn(tool, result.stdout)
         for platform_name in ("Windows", "WSL/Linux", "macOS"):
             self.assertIn(platform_name, result.stdout)
+
+    def test_active_dns_generates_precheck_plan_and_saves_to_run(self) -> None:
+        self.run_cli("new", "cli-test", "--target", "*.devnu11.cn")
+        self.run_cli("run", "new", "cli-test", "active dns", "--date", "2026-06-03")
+
+        result = self.run_cli(
+            "active-dns",
+            "*.devnu11.cn",
+            "--project",
+            "cli-test",
+            "--run",
+            "R001-2026-06-03-active-dns",
+            "--dict",
+            "dicts/curated/subdomains-main.txt",
+            "--resolvers",
+            "1.1.1.1,8.8.8.8",
+            "--canary",
+            "ai",
+            "--nonce",
+            "nx-test",
+            "--engine",
+            "puredns",
+            "--save",
+        )
+
+        self.assertIn("主动 DNS 执行计划", result.stdout)
+        self.assertIn("devnu11.cn", result.stdout)
+        self.assertIn("ai.devnu11.cn", result.stdout)
+        self.assertIn("nx-test.devnu11.cn", result.stdout)
+        self.assertIn("puredns + massdns", result.stdout)
+        self.assertIn("dnsx -wd", result.stdout)
+        self.assertIn("禁止", result.stdout)
+        self.assertIn("resolver 自检", result.stdout)
+        self.assertIn("证据登记", result.stdout)
+
+        run = self.project / "runs" / "R001-2026-06-03-active-dns"
+        plan = run / "outputs" / "active-dns-plan.md"
+        resolvers = run / "outputs" / "active-dns-resolvers.txt"
+        canary = run / "outputs" / "active-dns-canary-targets.txt"
+        nxdomain = run / "outputs" / "active-dns-nxdomain-targets.txt"
+        summary = run / "outputs" / "active-dns-summary.md"
+        for path in (plan, resolvers, canary, nxdomain, summary):
+            self.assertTrue(path.exists(), path)
+        self.assertIn("puredns bruteforce", plan.read_text(encoding="utf-8"))
+        self.assertIn("1.1.1.1", resolvers.read_text(encoding="utf-8"))
+        self.assertEqual("ai.devnu11.cn\n", canary.read_text(encoding="utf-8"))
+        self.assertEqual("nx-test.devnu11.cn\n", nxdomain.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

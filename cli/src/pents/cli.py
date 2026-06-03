@@ -81,6 +81,7 @@ RECON_TOOLS = (
         "kind": "go",
     },
 )
+DEFAULT_DNS_RESOLVERS = ("1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "223.5.5.5", "119.29.29.29")
 STATIC_JS_PARAM_HINTS = (
     "provider",
     "code",
@@ -402,6 +403,292 @@ def install_guidance(tool: dict[str, str]) -> list[str]:
         f"WSL/Linux：安装 Go 后把 GOBIN 指向项目 `tools/third-party/bin/`，再运行 `{command}`；PATH 只作为 fallback。",
         f"macOS：可用 Go 安装到项目 `tools/third-party/bin/`；ProjectDiscovery 工具也可参考官方 Homebrew 方式，但项目本地目录优先。",
     ]
+
+
+def split_csv(value: str) -> list[str]:
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def normalize_domain(value: str) -> str:
+    domain = value.strip().lower().rstrip(".")
+    if domain.startswith("*."):
+        domain = domain[2:]
+    if not re.fullmatch(r"[a-z0-9][a-z0-9.-]*\.[a-z0-9-]+", domain):
+        raise SystemExit(f"Invalid domain: {value}")
+    return domain
+
+
+def active_dns_target(value: str, domain: str) -> str:
+    target = value.strip().lower().rstrip(".")
+    if not target:
+        return ""
+    if target == domain or target.endswith(f".{domain}"):
+        return target
+    return f"{target}.{domain}"
+
+
+def default_active_dns_dict(root: Path) -> Path:
+    return root / "dicts" / "curated" / "subdomains-main.txt"
+
+
+def path_text(root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def shell_quote(value: str) -> str:
+    return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def count_lines(path: Path) -> int:
+    count = 0
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        for count, _ in enumerate(handle, 1):
+            pass
+    return count
+
+
+def active_dns_engine_label(engine: str) -> str:
+    labels = {
+        "puredns": "puredns + massdns",
+        "shuffledns": "shuffledns + massdns",
+        "dnsx": "dnsx -l fallback",
+    }
+    return labels.get(engine, engine)
+
+
+def select_active_dns_engine(root: Path, requested: str) -> str:
+    if requested != "auto":
+        return requested
+    if find_recon_tool(root, "puredns")[0] and find_recon_tool(root, "massdns")[0]:
+        return "puredns"
+    if find_recon_tool(root, "shuffledns")[0] and find_recon_tool(root, "massdns")[0]:
+        return "shuffledns"
+    if find_recon_tool(root, "dnsx")[0]:
+        return "dnsx"
+    return "puredns"
+
+
+def active_dns_required_tools(engine: str) -> list[str]:
+    tools = ["dnsx"]
+    if engine == "puredns":
+        tools.extend(["puredns", "massdns"])
+    elif engine == "shuffledns":
+        tools.extend(["shuffledns", "massdns"])
+    else:
+        tools.append("dnsx")
+    return sorted(set(tools), key=tools.index)
+
+
+def active_dns_paths(root: Path, args: argparse.Namespace) -> tuple[Path, Path, Path | None]:
+    project = ensure_project(root, args.project) if args.project else None
+    if project and args.run:
+        run_path = project / "runs" / args.run
+        if not run_path.exists():
+            raise SystemExit(f"Run does not exist: {run_path}")
+        return run_path / "outputs", run_path / "raw", project
+    if project:
+        return project / "outputs", project / "raw", project
+    return Path("outputs"), Path("raw"), None
+
+
+def active_dns_enum_commands(
+    engine: str,
+    domain: str,
+    dict_path: Path,
+    resolvers_file: Path,
+    raw_dir: Path,
+    root: Path,
+    resolvers_csv: str,
+    retry: str,
+    timeout: str,
+    threads: str,
+) -> list[str]:
+    dict_arg = shell_quote(path_text(root, dict_path))
+    resolvers_arg = shell_quote(path_text(root, resolvers_file))
+    raw_prefix = path_text(root, raw_dir)
+    hits = shell_quote(f"{raw_prefix}/active-dns-hits.txt")
+    if engine == "puredns":
+        return [
+            f"puredns bruteforce {dict_arg} {shell_quote(domain)} -r {resolvers_arg} -w {hits}",
+        ]
+    if engine == "shuffledns":
+        return [
+            f"shuffledns -d {shell_quote(domain)} -w {dict_arg} -r {resolvers_arg} -o {hits}",
+        ]
+    candidates = shell_quote(f"{raw_prefix}/active-dns-candidates.txt")
+    jsonl = shell_quote(f"{raw_prefix}/active-dns-dnsx.jsonl")
+    return [
+        f"awk '{{print $0\".{domain}\"}}' {dict_arg} > {candidates}",
+        (
+            f"dnsx -silent -l {candidates} -r {shell_quote(resolvers_csv)} "
+            f"-a -aaaa -cname -json -o {jsonl} -retry {retry} -timeout {timeout} -t {threads}"
+        ),
+        f"# 从 {jsonl} 提取命中 host，保存为 {hits}，再进入复核步骤。",
+    ]
+
+
+def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Path, str]]]:
+    root = workspace_root()
+    domain = normalize_domain(args.domain)
+    dict_path = Path(args.dict) if args.dict else default_active_dns_dict(root)
+    if not dict_path.is_absolute():
+        dict_path = root / dict_path
+    if not dict_path.exists():
+        raise SystemExit(f"Dictionary does not exist: {dict_path}")
+
+    resolvers = split_csv(args.resolvers) or list(DEFAULT_DNS_RESOLVERS)
+    resolvers_csv = ",".join(resolvers)
+    canary_targets = [active_dns_target(item, domain) for item in args.canary]
+    canary_targets = [item for item in canary_targets if item]
+    nonce = args.nonce or f"nx-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    nx_targets = [active_dns_target(nonce, domain)]
+    engine = select_active_dns_engine(root, args.engine)
+    output_dir, raw_dir, project = active_dns_paths(root, args)
+    resolvers_file = output_dir / "active-dns-resolvers.txt"
+    canary_file = output_dir / "active-dns-canary-targets.txt"
+    nx_file = output_dir / "active-dns-nxdomain-targets.txt"
+    plan_file = output_dir / "active-dns-plan.md"
+    summary_file = output_dir / "active-dns-summary.md"
+    hits_file = raw_dir / "active-dns-hits.txt"
+    verify_file = raw_dir / "active-dns-verify.jsonl"
+    canary_raw = raw_dir / "active-dns-canary.jsonl"
+    nx_raw = raw_dir / "active-dns-nxdomain.jsonl"
+
+    tool_rows = ["| 工具 | 状态 | 来源 | 说明 |", "| --- | --- | --- | --- |"]
+    for name in ("puredns", "massdns", "shuffledns", "dnsx"):
+        path, source = find_recon_tool(root, name)
+        status = "OK" if path else "MISSING"
+        note = "当前引擎需要" if name in active_dns_required_tools(engine) else "备用/参考"
+        tool_rows.append(f"| {name} | {status} | {source or '-'} | {note} |")
+
+    commands: list[tuple[str, str]] = []
+    dnsx_common = f"-r {shell_quote(resolvers_csv)} -a -aaaa -cname -json -retry {args.retry} -timeout {args.timeout}"
+    if canary_targets:
+        commands.append(
+            (
+                "canary 子域校验",
+                f"dnsx -silent -l {shell_quote(path_text(root, canary_file))} {dnsx_common} -o {shell_quote(path_text(root, canary_raw))}",
+            )
+        )
+    resolver_source = canary_file if canary_targets else nx_file
+    for resolver in resolvers:
+        safe_resolver = re.sub(r"[^a-zA-Z0-9]+", "-", resolver).strip("-")
+        resolver_raw = raw_dir / f"resolver-health-{safe_resolver}.jsonl"
+        commands.append(
+            (
+                f"resolver 自检：{resolver}",
+                (
+                    f"dnsx -silent -l {shell_quote(path_text(root, resolver_source))} -r {shell_quote(resolver)} "
+                    f"-a -json -retry {args.retry} -timeout {args.timeout} -o {shell_quote(path_text(root, resolver_raw))}"
+                ),
+            )
+        )
+    commands.append(
+        (
+            "随机 NXDOMAIN 泛解析检查",
+            f"dnsx -silent -l {shell_quote(path_text(root, nx_file))} {dnsx_common} -o {shell_quote(path_text(root, nx_raw))}",
+        )
+    )
+    for index, command in enumerate(
+        active_dns_enum_commands(
+            engine,
+            domain,
+            dict_path,
+            resolvers_file,
+            raw_dir,
+            root,
+            resolvers_csv,
+            args.retry,
+            args.timeout,
+            args.threads,
+        ),
+        1,
+    ):
+        commands.append((f"完整字典枚举 {index}", command))
+    commands.append(
+        (
+            "A/AAAA/CNAME 复核",
+            (
+                f"dnsx -silent -l {shell_quote(path_text(root, hits_file))} {dnsx_common} "
+                f"-o {shell_quote(path_text(root, verify_file))}"
+            ),
+        )
+    )
+    if project:
+        commands.append(
+            (
+                "证据登记",
+                (
+                    f"uv run --project cli pents evidence {shell_quote(project.name)} {shell_quote(path_text(root, verify_file))} "
+                    f"--type active-dns --target {shell_quote(domain)} --file {shell_quote(path_text(root, verify_file))} "
+                    "--notes 'active-dns; chain=complete after manual result review'"
+                ),
+            )
+        )
+
+    command_lines = []
+    for title, command in commands:
+        command_lines.extend([f"### {title}", "", "```bash", command, "```", ""])
+
+    canary_text = ", ".join(canary_targets) if canary_targets else "未提供；正式执行前必须补充至少 1 个已知存在子域，例如 ai.<domain>"
+    lines = [
+        "# 主动 DNS 执行计划",
+        "",
+        "## 输入",
+        "",
+        f"- 根域：`{domain}`",
+        f"- 字典：`{path_text(root, dict_path)}`（{count_lines(dict_path)} 行）",
+        f"- Resolver：`{resolvers_csv}`",
+        f"- Canary：{canary_text}",
+        f"- 随机 NXDOMAIN：`{nx_targets[0]}`",
+        f"- 选择引擎：`{active_dns_engine_label(engine)}`",
+        "",
+        "## 工具链",
+        "",
+        "- 推荐顺序：`puredns + massdns` -> `shuffledns + massdns` -> `dnsx -l fallback`。",
+        "- `dnsx` 只作为 canary、resolver 自检、A/AAAA/CNAME 复核和小规模 fallback。",
+        "- `dnsx -wd` 禁止作为常规枚举参数，避免 R001 暴露的 0 命中误判。",
+        "",
+        *tool_rows,
+        "",
+        "## 停止条件",
+        "",
+        "- Canary 子域无命中：停止完整字典枚举，先排查 resolver、字典拼接和工具参数。",
+        "- 随机 NXDOMAIN 有 A/AAAA/CNAME 命中：停止并按泛解析/wildcard 场景处理。",
+        "- 单个 resolver 超时或 0 响应：剔除该 resolver 后再进入完整枚举。",
+        "- `puredns/massdns` 缺失时不要假装已走主链路；只能标注为替代链路或 fallback。",
+        "",
+        "## 输出文件",
+        "",
+        f"- 计划：`{path_text(root, plan_file)}`",
+        f"- 摘要：`{path_text(root, summary_file)}`",
+        f"- 命中列表：`{path_text(root, hits_file)}`",
+        f"- 复核 JSONL：`{path_text(root, verify_file)}`",
+        "",
+        "## 执行命令",
+        "",
+        *command_lines,
+        "## 报告摘要模板",
+        "",
+        "- 主链路是否使用：待执行后填写。",
+        "- Canary 结果：待执行后填写。",
+        "- NXDOMAIN/wildcard 结果：待执行后填写。",
+        "- Resolver 剔除情况：待执行后填写。",
+        "- 命中数量和新增资产：待执行后填写。",
+        "- 证据编号：待执行后填写。",
+    ]
+    text = "\n".join(lines).rstrip() + "\n"
+    writes = [
+        (resolvers_file, "\n".join(resolvers) + "\n"),
+        (canary_file, "\n".join(canary_targets) + ("\n" if canary_targets else "")),
+        (nx_file, "\n".join(nx_targets) + "\n"),
+        (plan_file, text),
+        (summary_file, "\n".join(lines[-12:]).rstrip() + "\n"),
+    ]
+    return text, writes
 
 
 def next_numbered_id(existing: list[str], prefix: str) -> str:
@@ -1146,6 +1433,24 @@ def cmd_doctor_recon(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_active_dns(args: argparse.Namespace) -> int:
+    plan, writes = build_active_dns_plan(args)
+    print(plan)
+    if args.save:
+        root = workspace_root()
+        _, raw_dir, _ = active_dns_paths(root, args)
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        for path, content in writes:
+            write_text(path, content)
+        saved = [str(path) for path, _ in writes]
+        print("Saved active DNS plan files:")
+        for path in saved:
+            print(f"- {path}")
+    else:
+        print("提示：当前仅打印计划；添加 `--save --project <name> --run <run-dir>` 可写入 run outputs/raw。")
+    return 0
+
+
 def field_value(text: str, field: str) -> str:
     # Match both fullwidth ：(U+FF1A) and ASCII : after field name
     match = re.search(rf"^- {re.escape(field)}[：:]\s*(.*)$", text, re.MULTILINE)
@@ -1274,6 +1579,21 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_recon_parser = subparsers.add_parser("doctor-recon", help="check recon tool availability and install guidance")
     doctor_recon_parser.add_argument("--strict", action="store_true", help="return non-zero when core recon tools are missing")
     doctor_recon_parser.set_defaults(func=cmd_doctor_recon)
+
+    active_dns_parser = subparsers.add_parser("active-dns", help="prepare active DNS precheck and execution plan")
+    active_dns_parser.add_argument("domain", help="root domain or wildcard scope such as *.example.com")
+    active_dns_parser.add_argument("--dict", default="", help="subdomain dictionary path")
+    active_dns_parser.add_argument("--resolvers", default=",".join(DEFAULT_DNS_RESOLVERS), help="comma-separated resolvers")
+    active_dns_parser.add_argument("--canary", action="append", default=[], help="known existing subdomain label or FQDN")
+    active_dns_parser.add_argument("--nonce", default="", help="custom NXDOMAIN label for wildcard check")
+    active_dns_parser.add_argument("--engine", choices=("auto", "puredns", "shuffledns", "dnsx"), default="auto")
+    active_dns_parser.add_argument("--threads", default="1000", help="dnsx fallback thread count")
+    active_dns_parser.add_argument("--retry", default="1")
+    active_dns_parser.add_argument("--timeout", default="2")
+    active_dns_parser.add_argument("--project", default="", help="project name for evidence command and saved outputs")
+    active_dns_parser.add_argument("--run", default="", help="run directory name such as R002-2026-06-03-active-dns")
+    active_dns_parser.add_argument("--save", action="store_true", help="save plan and helper input files")
+    active_dns_parser.set_defaults(func=cmd_active_dns)
 
     return parser
 

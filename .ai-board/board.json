@@ -6,7 +6,7 @@
   },
   "next_id": 46,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T09:35:50+00:00",
+  "updated_at": "2026-06-03T09:51:15+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T09:35:40+00:00",
+      "updated_at": "2026-06-03T09:51:06+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T09:35:40+00:00"
+      "released_at": "2026-06-03T09:51:06+00:00"
     },
     {
       "id": "claude-code",
@@ -132,29 +132,6 @@
       "leftovers": "",
       "created_at": "2026-06-03T02:33:34+00:00",
       "updated_at": "2026-06-03T02:33:34+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0039",
-      "title": "实现 pents active-dns 主动 DNS 预检与执行封装",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "输入 domain/dict/resolvers 后自动执行 canary 子域校验、随机 NXDOMAIN 泛解析检查、resolver 自检、完整字典枚举、A/AAAA/CNAME 复核、证据登记和报告摘要；明确禁止将 dnsx -wd 当作常规枚举参数；覆盖 R001 暴露的 0 命中误判场景"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-03T07:59:46+00:00",
-      "updated_at": "2026-06-03T07:59:46+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     },
@@ -1652,6 +1629,37 @@
       "started_at": "2026-06-03T09:22:58+00:00",
       "completed_at": "2026-06-03T09:35:40+00:00",
       "archived_at": "2026-06-03T09:35:50+00:00"
+    },
+    {
+      "id": "T-0039",
+      "title": "实现 pents active-dns 主动 DNS 预检与执行封装",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "cli/src/pents/cli.py",
+        "docs/项目路线",
+        "tests/test_pents_cli.py"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "输入 domain/dict/resolvers 后自动执行 canary 子域校验、随机 NXDOMAIN 泛解析检查、resolver 自检、完整字典枚举、A/AAAA/CNAME 复核、证据登记和报告摘要；明确禁止将 dnsx -wd 当作常规枚举参数；覆盖 R001 暴露的 0 命中误判场景"
+      ],
+      "verification": "已实现 pents active-dns：支持 *.domain 规范化、字典/resolver/canary/NXDOMAIN/engine 参数，默认生成 canary 校验、随机 NXDOMAIN、逐 resolver 自检、完整字典枚举、A/AAAA/CNAME 复核、pents evidence 登记和摘要模板；明确禁止 dnsx -wd；可用 --save 写入 run outputs/raw 辅助文件。验证：uv run --project cli python -X utf8 -m unittest discover -s tests 通过 12 个测试；uv run --project cli pents active-dns *.devnu11.cn --dict dicts/curated/subdomains-main.txt --resolvers 1.1.1.1,8.8.8.8 --canary ai --nonce nx-test --engine puredns 可输出完整计划；doctor-recon 仍能提示 puredns/massdns 缺失和 dnsx PATH fallback。",
+      "deferred_verification": "",
+      "leftovers": "按用户前序要求，当前命令默认不直接联网执行，而是生成 Claude Code 可执行计划；显式 --execute 执行模式后续如需要可单独排期。docs/当前状态.md 仍由 T-0042 claude-code 锁定，本轮未更新。根目录 README.md 与 README_en.md 为未跟踪文件，未纳入本任务提交。",
+      "created_at": "2026-06-03T07:59:46+00:00",
+      "updated_at": "2026-06-03T09:51:15+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T09:42:59+00:00",
+      "started_at": "2026-06-03T09:42:59+00:00",
+      "completed_at": "2026-06-03T09:51:06+00:00",
+      "archived_at": "2026-06-03T09:51:15+00:00"
     }
   ]
 }
