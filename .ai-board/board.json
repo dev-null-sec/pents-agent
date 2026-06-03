@@ -6,7 +6,7 @@
   },
   "next_id": 46,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T09:51:15+00:00",
+  "updated_at": "2026-06-03T10:03:29+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T09:51:06+00:00",
+      "updated_at": "2026-06-03T10:03:21+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T09:51:06+00:00"
+      "released_at": "2026-06-03T10:03:21+00:00"
     },
     {
       "id": "claude-code",
@@ -132,29 +132,6 @@
       "leftovers": "",
       "created_at": "2026-06-03T02:33:34+00:00",
       "updated_at": "2026-06-03T02:33:34+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0040",
-      "title": "升级 subdomain-enumeration skill 主动 DNS 检查表",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "skill 明确区分被动来源、主动 DNS、HTTP 探测三阶段；主动 DNS 前要求 canary、resolver 健康检查、随机 NXDOMAIN 泛解析检查；说明 dnsx -wd 风险；输出 NOERROR/NODATA/A/AAAA/CNAME 分类和工具缺失建议"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-03T08:00:04+00:00",
-      "updated_at": "2026-06-03T08:00:04+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     },
@@ -1660,6 +1637,36 @@
       "started_at": "2026-06-03T09:42:59+00:00",
       "completed_at": "2026-06-03T09:51:06+00:00",
       "archived_at": "2026-06-03T09:51:15+00:00"
+    },
+    {
+      "id": "T-0040",
+      "title": "升级 subdomain-enumeration skill 主动 DNS 检查表",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/项目路线/主动DNS执行封装.md",
+        "skills/recon/subdomain-enumeration/SKILL.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "skill 明确区分被动来源、主动 DNS、HTTP 探测三阶段；主动 DNS 前要求 canary、resolver 健康检查、随机 NXDOMAIN 泛解析检查；说明 dnsx -wd 风险；输出 NOERROR/NODATA/A/AAAA/CNAME 分类和工具缺失建议"
+      ],
+      "verification": "已更新 skills/recon/subdomain-enumeration/SKILL.md：补充 puredns/massdns required_tools；明确被动来源、主动 DNS、HTTP 探测三阶段；主动 DNS 前要求 canary、随机 NXDOMAIN、逐 resolver 自检；优先使用 pents active-dns；说明 dnsx -wd 误用风险；补充 NOERROR/NODATA/A/AAAA/CNAME 与 wildcard/resolver-error 分类；补充工具缺失安装建议和 fallback 输出格式。验证：rg 检查 canary、NXDOMAIN、resolver、dnsx -wd、NOERROR、NODATA、A/AAAA/CNAME、puredns、massdns、工具缺失等关键词均覆盖；旧的 dnsx -resp 简化推荐命令和 shuffledns 旧示例未残留。",
+      "deferred_verification": "",
+      "leftovers": "未更新 docs/当前状态.md，因为仍在 T-0042 claude-code 锁定范围内。",
+      "created_at": "2026-06-03T08:00:04+00:00",
+      "updated_at": "2026-06-03T10:03:29+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T09:56:26+00:00",
+      "started_at": "2026-06-03T09:56:26+00:00",
+      "completed_at": "2026-06-03T10:03:21+00:00",
+      "archived_at": "2026-06-03T10:03:29+00:00"
     }
   ]
 }

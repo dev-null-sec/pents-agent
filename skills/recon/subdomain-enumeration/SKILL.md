@@ -10,6 +10,8 @@ tags:
   - 证书透明
 required_tools:
   - subfinder
+  - puredns
+  - massdns
   - dnsx
   - httpx
   - shuffledns
@@ -49,7 +51,9 @@ required_tools:
 pents doctor-recon
 ```
 
-如果缺少 `subfinder`、`dnsx`、`httpx`、`shuffledns` 或 `subzy`，必须说明缺失工具、影响步骤、安装建议和可替代方案，不能只写“未执行”。
+如果缺少 `subfinder`、`puredns`、`massdns`、`dnsx`、`httpx`、`shuffledns` 或 `subzy`，必须说明缺失工具、影响步骤、安装建议和可替代方案，不能只写“未执行”。
+
+第三方工具优先从 `tools/third-party/bin/` 查找；PATH 只作为 fallback。`dnsx` 若只存在于全局 PATH，仍要在记录中说明这是 fallback，不是项目推荐安装位置。
 
 ## 字典策略
 
@@ -124,38 +128,75 @@ subfinder -d <target.com> -silent -o subs_passive.txt
 - 字典：`dicts/curated/subdomains-main.txt`
 - 解析器：可信公共 DNS 或用户确认的解析器列表，避免来源不明的开放 resolver。
 - 并发/速率：按用户确认值执行；未确认时不执行主动枚举。
-- 泛解析检测：先解析 2-3 个随机不存在的子域名，判断是否存在 wildcard/catch-all。
+- Canary：至少提供 1 个已知存在子域名，例如 `ai.<target.com>`；canary 不命中时停止完整枚举。
+- 泛解析检测：先解析随机不存在的子域名，判断是否存在 wildcard/catch-all。
+- Resolver 自检：逐个 resolver 对 canary 或 NXDOMAIN 目标做解析，慢、0 响应或异常 resolver 必须剔除。
 
-示例流程：
-
-```bash
-# 先构造待解析名称，注意把 <target.com> 替换为授权根域名
-awk '{print $0".<target.com>"}' dicts/curated/subdomains-main.txt > subs_candidates.txt
-
-# 按用户确认的 DNS 速率执行；不同 dnsx 版本参数可能略有差异
-dnsx -l subs_candidates.txt -resp -o subs_active_dns.txt
-```
-
-如果使用 `shuffledns`，只对已确认规模的字典执行：
+优先使用 `pents active-dns` 生成执行计划，不要临场拼完整流程：
 
 ```bash
-shuffledns -d <target.com> -w dicts/curated/subdomains-main.txt -r resolvers.txt -o subs_active_dns.txt
+uv run --project cli pents active-dns "*.target.com" \
+  --project <project-name> \
+  --run <Rxxx-date-purpose> \
+  --dict dicts/curated/subdomains-main.txt \
+  --resolvers 1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,223.5.5.5,119.29.29.29 \
+  --canary <known-existing-label-or-fqdn> \
+  --engine auto \
+  --save
 ```
+
+执行计划必须包含：
+
+1. canary 子域校验。
+2. 随机 NXDOMAIN 泛解析检查。
+3. 逐 resolver 健康检查。
+4. 完整字典枚举。
+5. A/AAAA/CNAME 复核。
+6. `pents evidence` 证据登记命令。
+7. 报告摘要模板。
+
+工具链选择顺序：
+
+- 主链路：`puredns + massdns`。
+- 兼容替代：`shuffledns + massdns`。
+- 兜底：`dnsx -l`，仅在主链路不可用时使用。
+
+禁止把 `dnsx -wd` 当作常规枚举参数。R001 已暴露过该类参数误用会造成 0 命中误判；如果看到 `dnsx -wd <domain>` 被用于完整字典枚举，必须停止并修正为 `pents active-dns` 计划或 `dnsx -l <fqdn-list>` fallback。
+
+工具缺失处理：
+
+- 缺 `puredns` 或 `massdns`：不能声称已执行主动 DNS 主链路；只能使用 `shuffledns + massdns` 或 `dnsx -l` fallback，并写清影响。
+- 缺 `shuffledns`：仍可用 `puredns + massdns`；如果主链路也缺失，只能进入 `dnsx -l` fallback。
+- 缺 `dnsx`：不能完成 canary、resolver 自检和 A/AAAA/CNAME 复核，应阻塞并建议按 `pents doctor-recon` 安装。
+- 缺 resolver 授权或 canary：不执行完整枚举，只记录 blocker。
 
 ### 步骤 3：DNS 解析验证与去噪
 
-对被动和主动结果合并去重，再验证解析结果：
+对被动和主动结果合并去重，再验证解析结果。复核必须记录 A/AAAA/CNAME，不只记录“解析成功”。
 
 ```bash
 sort -u subs_passive.txt subs_active_dns.txt > subs_all.txt
-dnsx -l subs_all.txt -resp -o subs_resolved.txt
+dnsx -silent -l subs_all.txt -a -aaaa -cname -json -o subs_resolved.jsonl
 ```
+
+结果分类要求：
+
+| 分类 | 判定 | 处理 |
+| --- | --- | --- |
+| `resolved-a` | NOERROR 且有 A 记录 | 进入 inventory，后续 HTTP 授权后再探测 |
+| `resolved-aaaa` | NOERROR 且有 AAAA 记录 | 进入 inventory，记录 IPv6 线索 |
+| `resolved-cname` | NOERROR 且有 CNAME | 记录 CNAME、CDN/云厂商/第三方服务线索 |
+| `nodata` | NOERROR 但无 A/AAAA/CNAME | 不当作可访问入口；记录为 DNS 存在但无地址 |
+| `nxdomain` | NXDOMAIN | 丢弃或保留为去噪证据 |
+| `wildcard-noise` | 随机 NXDOMAIN 与候选结果响应一致 | 不当作真实资产，暂停并复盘 wildcard 策略 |
+| `resolver-error` | SERVFAIL、REFUSED、timeout 或 resolver 0 响应 | 剔除异常 resolver 后重试关键步骤 |
 
 去噪要求：
 
 - 如果存在泛解析，把与随机子域名响应一致的结果标为 `wildcard-noise`，不要当作真实资产。
 - 如果解析到 Cloudflare、Akamai、Fastly、阿里云、腾讯云、华为云等第三方网络，只记录 CDN/云厂商线索，不继续测试第三方基础设施。
 - 源站 IP 只作为线索，未获明确授权前不得直连验证。
+- NOERROR/NODATA 必须和 A/AAAA/CNAME 分开写，避免把没有地址记录的域名当成可访问资产。
 
 ### 步骤 4：HTTP 存活探测
 
@@ -199,6 +240,8 @@ HTTP/路径/API/端口探测遇到以下情况应立即暂停：
 ```text
 主动 DNS 子域名枚举：未执行
 原因：缺少 <授权窗口 / DNS 并发或速率 / 字典规模 / 解析器来源 / scope 确认>
+缺失工具：<puredns / massdns / dnsx / shuffledns / 无>
+安装建议：<运行 pents doctor-recon 后摘录具体建议；不要只写“安装工具”>
 已完成替代项：<被动来源、本地 JS、证书、历史 URL 等>
 影响：无法确认精选字典能否发现新子域名
 下一步需要用户确认：<具体问题>
@@ -206,12 +249,37 @@ HTTP/路径/API/端口探测遇到以下情况应立即暂停：
 
 如果未执行 HTTP 存活或路径/API 探测，必须单独说明，不要和 DNS 枚举混为一个 blocker。
 
+## 输出格式
+
+执行结果至少输出下面结构，方便主代理写入项目记录：
+
+```text
+目标根域：<target.com>
+授权状态：<被动 / 主动 DNS / HTTP 探测分别说明>
+被动来源：<来源 + 数量 + 文件>
+主动 DNS：<主链路 puredns+massdns / 替代 shuffledns+massdns / dnsx-l fallback / 未执行>
+Canary：<目标 + 命中/未命中 + 证据文件>
+NXDOMAIN / wildcard：<随机目标 + 结果 + 是否 wildcard-noise>
+Resolver：<保留 resolver / 剔除 resolver / 剔除原因>
+DNS 结果分类：
+  - resolved-a: <数量>
+  - resolved-aaaa: <数量>
+  - resolved-cname: <数量>
+  - nodata: <数量>
+  - nxdomain: <数量>
+  - wildcard-noise: <数量>
+  - resolver-error: <数量>
+工具缺失或 fallback：<缺失工具、fallback 原因、影响>
+下一步：<HTTP 探测 / 等待授权 / 字典回灌 / skill 修订>
+证据：<E-xxxx 或待登记文件路径>
+```
+
 ## 结果回填
 
 执行完毕后必须更新项目记录：
 
-- `inventory.md`：子域名、DNS 记录、CDN/云厂商判断、HTTP 存活入口、技术栈。
-- `evidence.md`：来源、命令摘要、字典文件、采集时间、关键响应摘要。
+- `inventory.md`：子域名、DNS 记录类型、A/AAAA/CNAME、NOERROR/NODATA 分类、CDN/云厂商判断、HTTP 存活入口、技术栈。
+- `evidence.md`：来源、命令摘要、字典文件、resolver、canary、NXDOMAIN、采集时间、关键响应摘要。
 - `progress.md`：已执行项、跳过项、阻塞项、停止原因。
 - `review.md`：本次字典命中质量、漏掉的新词条、是否需要修订 skill。
 
@@ -220,8 +288,9 @@ HTTP/路径/API/端口探测遇到以下情况应立即暂停：
 ## 验收标准
 
 1. 至少通过 2 类被动来源收集子域名。
-2. 如果主动 DNS 条件满足，已使用确认规模的字典完成受控批量解析。
-3. 所有候选子域名经过 DNS 解析验证和 wildcard 去噪。
+2. 如果主动 DNS 条件满足，已生成或执行 `pents active-dns` 计划，并完成 canary、随机 NXDOMAIN、逐 resolver 自检后才进入完整字典枚举。
+3. 所有候选子域名经过 DNS 解析验证、A/AAAA/CNAME 复核和 wildcard 去噪。
 4. HTTP 存活探测按低频节奏执行，并记录标题、状态码和技术栈。
-5. 跳过项写明具体原因、影响和下一步需要用户确认的信息。
-6. 结果已回填 inventory、evidence、progress、review，并记录字典回灌建议。
+5. DNS 结果按 resolved-a、resolved-aaaa、resolved-cname、nodata、nxdomain、wildcard-noise、resolver-error 分类。
+6. 跳过项写明具体原因、缺失工具、安装建议、影响和下一步需要用户确认的信息。
+7. 结果已回填 inventory、evidence、progress、review，并记录字典回灌建议。
