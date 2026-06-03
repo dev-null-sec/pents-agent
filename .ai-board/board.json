@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 43,
+  "next_id": 45,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T08:18:22+00:00",
+  "updated_at": "2026-06-03T08:32:28+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T08:17:52+00:00",
+      "updated_at": "2026-06-03T08:32:27+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T08:17:52+00:00"
+      "released_at": "2026-06-03T08:32:27+00:00"
     }
   ],
   "tasks": [
@@ -191,6 +191,29 @@
       "leftovers": "",
       "created_at": "2026-06-03T08:08:33+00:00",
       "updated_at": "2026-06-03T08:18:22+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0043",
+      "title": "建立短指令到任务卡的 AI 自主申领流程",
+      "description": "",
+      "priority": "P1",
+      "status": "inbox",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "用户只需给目标和简短边界；AI 先读 docs/计划看板.md 和相关任务卡，信息不足时反问，信息足够时自行生成或申领任务卡；任务卡必须包含目标、范围、禁止动作、输入缺口、验收、回填文件和完成归档要求；避免让用户手写长提示词"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-03T08:30:50+00:00",
+      "updated_at": "2026-06-03T08:30:50+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -1549,6 +1572,36 @@
       "started_at": "2026-06-03T08:08:21+00:00",
       "completed_at": "2026-06-03T08:17:52+00:00",
       "archived_at": "2026-06-03T08:17:52+00:00"
+    },
+    {
+      "id": "T-0044",
+      "title": "生成 T-0042 Claude Code 正式 DNS 执行任务卡",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e/briefs"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "projects/devnu11-cn-e2e/briefs 下提供一份 T-0042 专用任务卡；用户可以用一句短提示让 Claude Code 读取任务卡执行；任务卡明确 R001 是 Codex 前置验证基线，不替代正式执行"
+      ],
+      "verification": "已新增 projects/devnu11-cn-e2e/briefs/claude-t0042-active-dns.md；该任务卡支持用户用一句短提示让 Claude Code 读取并执行 T-0042；任务卡明确 R001 是 Codex 前置验证基线，不替代正式执行，并包含边界、canary、参数建议、回填要求和归档要求；docs/当前状态.md 已加入任务卡路径。",
+      "deferred_verification": "",
+      "leftovers": "T-0043 仍需后续实现通用短指令到任务卡/申领流程规范。",
+      "created_at": "2026-06-03T08:30:50+00:00",
+      "updated_at": "2026-06-03T08:32:28+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T08:30:50+00:00",
+      "started_at": "2026-06-03T08:30:50+00:00",
+      "completed_at": "2026-06-03T08:32:27+00:00",
+      "archived_at": "2026-06-03T08:32:28+00:00"
     }
   ]
 }
