@@ -11,7 +11,7 @@
 
 | 类型 | 内容 | 证据引用 | 是否合并到总报告 |
 | --- | --- | --- | --- |
-| 新增 | 主动 DNS 子域名枚举已完成：`dicts/curated/subdomains-main.txt` 167377 词条完整跑完，耗时约 99.363 秒，命中 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn` | E-0009 | yes |
+| 新增 | Codex 前置链路验证中误执行完整主动 DNS：`dicts/curated/subdomains-main.txt` 167377 词条完整跑完，耗时约 99.363 秒，命中 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`；不替代 Claude Code 正式执行 | E-0009 | yes |
 | 修正 | 之前“0 命中”是扫描链路错误：dnsx `-wd` 会进入泛解析过滤模式，未真正执行字典暴力枚举 | E-0009 | yes |
 | 待确认 | `online.devnu11.cn` 为 NOERROR 但无 A/AAAA，暂不作为可访问 Web 入口；`ai/blog/lk/st` 指向 Cloudflare A/AAAA，但未做 HTTP 探测 | E-0010 | yes |
 
@@ -40,6 +40,6 @@
 ## 建议合并到总报告的段落
 
 ```md
-主动 DNS 子域名枚举已完成。使用 `dicts/curated/subdomains-main.txt`（167377 词条）对 `devnu11.cn` 执行 dnsx 枚举，threads=2000、retry=2、timeout=2s、`rcode=noerror`，resolver 为 1.1.1.1/1.0.0.1/8.8.8.8/8.8.4.4/9.9.9.9/223.5.5.5/119.29.29.29。完整扫描耗时约 99.363 秒，命中 5 个 DNS 名称：`ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`。其中 `ai/blog/lk/st` 有 Cloudflare A/AAAA 记录，`online` 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选。本轮未执行 HTTP 存活、端口、路径/API 或漏洞验证。
+R001 是 Codex 前置链路验证中误执行完整主动 DNS 的事实记录，不替代 Claude Code 正式执行。使用 `dicts/curated/subdomains-main.txt`（167377 词条）对 `devnu11.cn` 执行 dnsx 枚举，threads=2000、retry=2、timeout=2s、`rcode=noerror`，resolver 为 1.1.1.1/1.0.0.1/8.8.8.8/8.8.4.4/9.9.9.9/223.5.5.5/119.29.29.29。完整扫描耗时约 99.363 秒，命中 5 个 DNS 名称：`ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`。其中 `ai/blog/lk/st` 有 Cloudflare A/AAAA 记录，`online` 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选。本轮未执行 HTTP 存活、端口、路径/API 或漏洞验证；Claude Code 正式主动 DNS 执行仍待 T-0042。
 
 ```

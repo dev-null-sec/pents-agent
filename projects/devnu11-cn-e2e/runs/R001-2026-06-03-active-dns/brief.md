@@ -44,6 +44,8 @@
 - 建议下一步
 - 范围风险
 
+边界说明：R001 原本应作为 Codex 工具链路前置验证，但实际误执行了完整主字典枚举；该结果只作为 Claude Code 正式执行的对照基线。
+
 本轮实际结果：主字典完整扫描耗时约 99.363 秒，命中 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`。其中 `ai/blog/lk/st` 有 Cloudflare A/AAAA，`online` 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选。
 
 阻塞或跳过项必须写清：

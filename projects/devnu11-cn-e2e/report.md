@@ -10,7 +10,7 @@
 
 ## 执行摘要
 
-本次端到端验证（ai-board T-0008 及后续 recon 补充）对目标 `*.devnu11.cn` 执行了授权渗透测试的信息收集和静态分析阶段。已完成前端 JS 文件静态分析、被动信息收集和一次主动 DNS 子域名字典枚举；尚未进行 HTTP 存活探测、主动端口探测、服务指纹探测或漏洞验证请求。
+本次端到端验证（ai-board T-0008 及后续 recon 补充）对目标 `*.devnu11.cn` 执行了授权渗透测试的信息收集和静态分析阶段。已完成前端 JS 文件静态分析和被动信息收集；R001 中 Codex 在工具链路前置验证时误执行了完整主动 DNS 字典枚举，该结果只作为 Claude Code 正式执行的对照基线。尚未进行 HTTP 存活探测、主动端口探测、服务指纹探测或漏洞验证请求。
 
 **关键发现：**
 
@@ -18,14 +18,14 @@
 - 通过 JS 静态分析和公开资料确认软件为 Sub2API 开源 AI API 代理平台
 - 通过 JS 静态分析识别出 40+ 前端路由、100+ API 端点、7 个 OAuth 集成、3 个支付集成
 - 5 个被动来源（crt.sh、urlscan.io、Wayback Machine、AlienVault OTX、Google 搜索）均未发现子域名或 URL 记录
-- 主动 DNS 主字典枚举命中 5 个 DNS 名称：`ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`
+- Codex 前置验证中误执行主动 DNS 主字典，命中 5 个 DNS 名称：`ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`
 - `ai/blog/lk/st` 指向 Cloudflare A/AAAA；`online` 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选
 - 发现 Cloudflare Turnstile 集成线索，较可能存在 Cloudflare 泛解析或通配符证书场景
 - 发现 **1 个待确认高危漏洞**：安装向导端点暴露（F-0001）
 - 发现多个需进一步验证的敏感功能：系统重启/回滚、SMTP 测试、Admin API Key 重置等
 - 被动子域名枚举（crt.sh）未返回结果
 
-**限制：** 本次测试仅完成静态分析、被动 recon 和 DNS 枚举；未发起 HTTP、端口、路径/API 或漏洞验证请求。完整的安全评估需要：HTTP 探测授权窗口、请求速率、测试账号、以及对候选入口的低频主动验证许可。
+**限制：** 本次测试仅完成静态分析、被动 recon 和 Codex 前置 DNS 链路验证；Claude Code 正式主动 DNS 执行仍待 T-0042。未发起 HTTP、端口、路径/API 或漏洞验证请求。完整的安全评估需要：正式 DNS 执行结果、HTTP 探测授权窗口、请求速率、测试账号、以及对候选入口的低频主动验证许可。
 
 ## 测试范围
 
@@ -57,7 +57,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 被动信息收集 | done |  | crt.sh、urlscan、Wayback、OTX、Google |  | 5 个来源均无子域名或 URL 记录 | 无 |
 | JS 静态分析 | done |  | 已分析 4 个前端 JS 文件 |  | 已提取路由、API、参数、OAuth、支付和敏感管理功能 | 无 |
-| 主动 DNS 子域名枚举 | done |  | dnsx + `dicts/curated/subdomains-main.txt` 完整扫描；E-0009/E-0010 |  | 命中 5 个 DNS 名称，其中 4 个有 Cloudflare A/AAAA | 无 |
+| 主动 DNS 子域名枚举 | pending | 执行主体待切换 | Codex 已产出前置验证基线 E-0009/E-0010 | Claude Code 正式执行尚未完成 | 需确认正式执行结果是否与 R001 对照一致 | 由 Claude Code 按 T-0042 执行 |
 | HTTP 存活 / CDN / 服务指纹 | blocker | 授权缺失 | 已获得 `ai/blog/lk/st` 候选 DNS 名称和 Cloudflare A/AAAA 线索 | 未对候选入口发起 HTTP 探测 | 无法确认真实入口、响应头、证书、跳转链和 CDN/WAF | 是否允许低频 HTTP 探测、授权窗口、HTTP 请求速率 |
 | 端口确认 | blocker | 目标无输入 / 风险过高 | 已记录小范围端口确认清单 | 未扫描端口 | 无法确认 Web/API 常见端口暴露 | 实际 URL 或授权 IP、端口范围、允许速率 |
 | API / 认证后测试 | blocker | 目标无输入 / 等待账号 | 已从 JS 提取 100+ API 端点 | 未验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 所有漏洞仍为待确认 | 实际 URL、普通测试账号、管理员账号授权或注册许可 |
@@ -90,12 +90,13 @@
 - 5 个被动来源均无 `devnu11.cn` 子域名或 URL 记录。
 - JS 中存在 Cloudflare Turnstile 配置字段，结合被动来源全空，提示常规被动来源覆盖不足。
 
-### 主动 DNS 结论
+### 主动 DNS 前置验证结论
 
-- 2026-06-03 已执行主动 DNS 主字典枚举，167377 词条约 99.363 秒完成。
+- 2026-06-03 Codex 在前置链路验证中误执行完整主动 DNS 主字典，167377 词条约 99.363 秒完成。
 - 命中 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`。
 - `ai/blog/lk/st` 指向同一组 Cloudflare A/AAAA；`online` 为 NOERROR 但无 A/AAAA，暂不作为 Web 入口。
 - 上一次 0 命中是 dnsx `-wd` 参数误用导致的扫描链路问题，已在 R001 复盘中记录。
+- 该结果只作为工具链路可用性和 Claude Code 正式执行对照基线；正式执行仍待 T-0042。
 - 在未确认 HTTP 授权窗口和请求速率前，不应对候选子域名执行 HTTP 探测、端口扫描或源站直连。
 
 ### OAuth 集成

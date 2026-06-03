@@ -79,9 +79,9 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 - `subdomain-enumeration` skill 设计了被动（crt.sh）+ 主动（DNS 爆破）两阶段。本场景下被动阶段无输出，但主动 DNS 经用户授权后命中 5 条，说明 skill 需要更明确地指导“何时应主动扫、如何预检链路、如何分类 NOERROR/NODATA”。
 - `javascript-analysis` skill 在本轮中额外产生了 CDN 线索和软件识别价值，说明 JS 分析在 recon 基本盘中的作用被低估，建议升格为 recon 阶段的默认检查项而非可选项。
 
-### 主动 DNS 执行复盘（2026-06-03）
+### 主动 DNS 前置验证复盘（2026-06-03）
 
-用户明确授权 `*.devnu11.cn` 主动 DNS 子域名枚举，并要求完整字典 5 分钟内完成。Codex 按本轮授权执行：
+本阶段原本应由 Codex 只验证工具链路前置准备是否可用，再交给 Claude Code 正式执行。实际执行中，Codex 误把用户“现在就跑”理解为由自己完整执行主动 DNS 枚举，越过了既定协作边界。以下结果只作为前置验证和 Claude Code 正式执行的对照基线：
 
 | 检查项 | 执行结果 | 评价 |
 | --- | --- | --- |
@@ -91,6 +91,8 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 | 泛解析噪声 | 5 个随机子域为 NXDOMAIN | 未发现 wildcard 噪声 |
 
 **关键问题**：第一次扫描得到 0 命中，是因为 dnsx `-wd` 参数误用。该参数会进入泛解析过滤模式，不应与主字典枚举混在一个命令中。用户用 `ai.` 线索及时指出异常，避免错误结论沉淀。
+
+**执行边界修正**：T-0042 已重新入池，要求由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举。Codex 后续只提供 canary、resolver、参数和证据模板，不代替 Claude Code 执行正式扫描。
 
 **流程改进**：
 
@@ -103,7 +105,7 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 1. **非交互执行的问题**：上一次非交互 Claude Code 执行中，进程长时间挂起未完成分析。交互式会话中通过 grep 等工具高效完成了静态分析。建议未来非交互任务增加超时和检查点机制。
 2. **JS 文件获取**：JS 文件已在非交互执行中下载，但下载来源 URL 未记录在 evidence 中。缺少来源信息降低了证据的可追溯性。
-3. **被动 vs 主动**：主动 DNS 已证明有价值；后续还需要单独授权 HTTP、端口和 API 验证，不能从 DNS 命中自动扩展测试范围。
+3. **执行主体边界**：主动 DNS 工具链路已证明可用，但正式执行应由 Claude Code 完成。后续还需要单独授权 HTTP、端口和 API 验证，不能从 DNS 命中自动扩展测试范围。
 
 ### pents CLI
 
@@ -133,7 +135,8 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 | 测试面 | 原因类型 | 已尝试来源 / 替代动作 | 未执行项 | 影响 | 建议安装工具 | 需要用户补充 | 后续跟进 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| HTTP 存活 / CDN / 服务指纹 | 授权缺失 | 主动 DNS 已命中 `ai/blog/lk/st` 且有 Cloudflare A/AAAA | 未对候选入口发起 HTTP 探测 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 是否允许对候选入口做低频 HTTP 探测；授权窗口、HTTP 请求速率 | 补齐 HTTP 条件后按低频探测执行 |
+| Claude Code 正式主动 DNS | 执行主体未完成 | Codex 已产出前置验证基线 `ai/blog/lk/online/st` | 未由 Claude Code 正式执行 | 无法满足“由 Claude Code 执行”的协作要求 | dnsx | 无；Codex 已提供建议参数和避坑 | T-0042 由 Claude Code 执行并对比 R001 |
+| HTTP 存活 / CDN / 服务指纹 | 授权缺失 | Codex 前置验证发现 `ai/blog/lk/st` 有 Cloudflare A/AAAA | 未对候选入口发起 HTTP 探测 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 是否允许对候选入口做低频 HTTP 探测；授权窗口、HTTP 请求速率 | 补齐 HTTP 条件后按低频探测执行 |
 | 小范围端口确认 | 目标无输入 / 风险过高 | 已列出常见 Web/API 端口确认范围 | 未确认 80/443/8080/8443 等端口 | 无法判断暴露端口和服务 banner | 视 Claude 执行环境确认 | 实际 URL 或授权 IP、端口范围、允许速率 | 仅在授权范围和端口范围明确后执行 |
 | API / 认证后测试 | 目标无输入 / 等待账号 | 已从 JS 中提取 100+ API 端点和敏感管理功能 | 未验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 所有 finding 仍为待确认，无法确认实际风险 | 无 | 实际 URL、普通测试账号、管理员账号授权或注册许可 | 入口和账号齐备后启动 Web/API 子代理 |
 
@@ -141,6 +144,7 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 | 缺口 | 影响 | 如何填补 |
 | --- | --- | --- |
+| Claude Code 正式主动 DNS 未执行 | 不满足原协作约定 | 执行 T-0042，由 Claude Code 正式跑并与 R001 前置验证对比 |
 | HTTP 探测条件未确认 | 无法验证候选子域名是否为真实 Web 入口 | 确认是否允许对 `ai/blog/lk/st` 做低频 HTTP 探测、请求速率和窗口 |
 | 测试账号未提供 | 无法测试认证后端点 | 用户注册或提供测试账号 |
 | JS 文件下载来源未记录 | 证据链不完整 | 记录下载时的 URL 和响应头 |
@@ -149,10 +153,11 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 ## 后续步骤
 
-1. 向用户确认是否允许对 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 做低频 HTTP 探测
-2. 获得测试账号或确认允许用户注册
-3. 在授权窗口内进行低频 HTTP/CDN/服务指纹主动探测
-4. 验证 F-0001（setup 端点是否存在）
-5. 对管理后台 API 进行 IDOR/BFLA 测试
-6. 对 OAuth 回调进行配置审查
-7. 数周后复查 crt.sh 证书透明日志
+1. 先执行 T-0042：由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举，并与 R001 Codex 前置验证结果对比
+2. 再向用户确认是否允许对 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 做低频 HTTP 探测
+3. 获得测试账号或确认允许用户注册
+4. 在授权窗口内进行低频 HTTP/CDN/服务指纹主动探测
+5. 验证 F-0001（setup 端点是否存在）
+6. 对管理后台 API 进行 IDOR/BFLA 测试
+7. 对 OAuth 回调进行配置审查
+8. 数周后复查 crt.sh 证书透明日志

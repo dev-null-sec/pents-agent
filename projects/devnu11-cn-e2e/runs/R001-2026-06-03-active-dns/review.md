@@ -17,6 +17,7 @@
 
 | 问题 | 影响 | 后续动作 |
 | --- | --- | --- |
+| 执行主体边界误判 | R001 由 Codex 误执行完整字典，不满足“由 Claude Code 执行”的协作约定 | T-0042 由 Claude Code 正式执行；Codex 只交接前置验证材料 |
 | dnsx `-wd` 参数误用 | 上一次命令进入泛解析过滤模式，没有真正跑字典，导致空结果 | 后续应把泛解析检查与字典枚举拆成两个步骤；CLI 封装中禁止把 `-wd` 当作扫描参数 |
 | 缺少扫描前 canary 校验 | 已知存在的 `ai.devnu11.cn` 没有先被用来验证链路，导致错误更晚暴露 | 主动 DNS 流程加入 canary：已知词条、随机 NXDOMAIN、resolver 健康检查 |
 | NOERROR 被误读风险 | `online.devnu11.cn` 是 NOERROR 但无 A/AAAA，不能直接当作 Web 入口 | 结果解析要区分 A/AAAA/CNAME、NODATA、NXDOMAIN 和 wildcard 噪声 |

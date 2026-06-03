@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 41,
+  "next_id": 43,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T08:00:59+00:00",
+  "updated_at": "2026-06-03T08:18:22+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T08:00:50+00:00",
+      "updated_at": "2026-06-03T08:17:52+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T08:00:50+00:00"
+      "released_at": "2026-06-03T08:17:52+00:00"
     }
   ],
   "tasks": [
@@ -168,6 +168,29 @@
       "leftovers": "",
       "created_at": "2026-06-03T08:00:04+00:00",
       "updated_at": "2026-06-03T08:00:04+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0042",
+      "title": "由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举",
+      "description": "",
+      "priority": "P0",
+      "status": "scheduled",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "Codex 只提供工具链路前置验证材料和建议参数；Claude Code 使用 dicts/curated/subdomains-main.txt 对 devnu11.cn 授权子域范围执行正式主动 DNS 枚举；执行前先跑 canary、随机 NXDOMAIN 和 resolver 自检；结果回填 projects/devnu11-cn-e2e，并明确与 R001 Codex 前置验证结果对比"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-03T08:08:33+00:00",
+      "updated_at": "2026-06-03T08:18:22+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -1495,6 +1518,37 @@
       "started_at": "2026-06-03T07:35:36+00:00",
       "completed_at": "2026-06-03T08:00:50+00:00",
       "archived_at": "2026-06-03T08:00:59+00:00"
+    },
+    {
+      "id": "T-0041",
+      "title": "纠正 R001 主动 DNS 执行边界记录",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        ".ai-board/board.json",
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "R001 明确标记为 Codex 工具链路前置验证/误执行结果，不作为 Claude Code 正式执行验收；看板重新保留 Claude Code 正式执行 devnu11 主动 DNS 枚举任务；docs/当前状态.md 和 devnu11 项目文档不误导下一轮执行者"
+      ],
+      "verification": "R001 已在 docs/当前状态.md、scope/progress/inventory/evidence/report/review 和 run 级文档中标记为 Codex 工具链路前置验证中的误执行结果，不作为 Claude Code 正式执行验收；T-0042 已入池，要求 Claude Code 正式执行 devnu11 主动 DNS 并与 R001 前置验证基线对比；未进行任何新的网络探测。",
+      "deferred_verification": "",
+      "leftovers": "T-0042 仍需由 Claude Code 正式执行；Codex 后续只提供前置材料和建议参数。",
+      "created_at": "2026-06-03T08:08:21+00:00",
+      "updated_at": "2026-06-03T08:17:52+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T08:08:21+00:00",
+      "started_at": "2026-06-03T08:08:21+00:00",
+      "completed_at": "2026-06-03T08:17:52+00:00",
+      "archived_at": "2026-06-03T08:17:52+00:00"
     }
   ]
 }
