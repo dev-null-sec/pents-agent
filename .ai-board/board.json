@@ -6,7 +6,7 @@
   },
   "next_id": 37,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T06:35:04+00:00",
+  "updated_at": "2026-06-03T06:53:09+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,42 +37,12 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T06:34:49+00:00",
+      "updated_at": "2026-06-03T06:52:56+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T06:34:49+00:00"
+      "released_at": "2026-06-03T06:52:56+00:00"
     }
   ],
   "tasks": [
-    {
-      "id": "T-0011",
-      "title": "实现 pents suggest-skills",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "CLI",
-      "source": "user",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [
-        "cli",
-        "docs",
-        "skills",
-        "tests"
-      ],
-      "depends_on": [],
-      "acceptance": [
-        "pents suggest-skills 可根据关键词或测试面推荐 skills/ 下正式 skill",
-        "输出包含 skill 路径、适用场景摘要和建议 agent role",
-        "新增测试覆盖 Web/API/Recon 推荐"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-02T09:40:02+00:00",
-      "updated_at": "2026-06-02T09:40:02+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
     {
       "id": "T-0014",
       "title": "创建 demo-project 示例流程",
@@ -1368,6 +1338,45 @@
       "started_at": "2026-06-03T06:28:20+00:00",
       "completed_at": "2026-06-03T06:34:49+00:00",
       "archived_at": "2026-06-03T06:35:04+00:00"
+    },
+    {
+      "id": "T-0011",
+      "title": "实现 pents suggest-skills",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "CLI",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "cli/src/pents/cli.py",
+        "docs/当前状态.md",
+        "skills/README.md",
+        "tests/test_pents_cli.py"
+      ],
+      "verify_scope": [
+        "cli",
+        "docs",
+        "skills",
+        "tests"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "pents suggest-skills 可根据关键词或测试面推荐 skills/ 下正式 skill",
+        "输出包含 skill 路径、适用场景摘要和建议 agent role",
+        "新增测试覆盖 Web/API/Recon 推荐"
+      ],
+      "verification": "已实现 pents suggest-skills；命令从 skills/README.md 解析正式 skill 清单，根据查询词、role 和常见安全术语别名推荐 skill；输出包含 Skill 名称、建议 agent role、Skill 路径和适用场景摘要；已新增 Web/API/Recon 推荐测试；已运行 uv run --project cli python -X utf8 -m unittest discover -s tests，11 个测试通过。",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-02T09:40:02+00:00",
+      "updated_at": "2026-06-03T06:53:09+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T06:49:43+00:00",
+      "started_at": "2026-06-03T06:49:43+00:00",
+      "completed_at": "2026-06-03T06:52:56+00:00",
+      "archived_at": "2026-06-03T06:53:09+00:00"
     }
   ]
 }

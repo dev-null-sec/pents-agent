@@ -85,6 +85,20 @@ STATIC_JS_PARAM_HINTS = (
 )
 STATIC_JS_OAUTH_HINTS = ("oauth", "oidc", "sso", "callback", "redirect_uri", "state", "provider")
 STATIC_JS_PAYMENT_HINTS = ("stripe", "airwallex", "payment", "checkout", "order", "subscription", "qrcode")
+SKILL_ALIASES = {
+    "subdomain-enumeration": "subdomain dns cdn origin source wildcard recon 信息收集 子域名 泛解析 源站",
+    "javascript-analysis": "javascript js bundle endpoint route api static 静态分析 前端 端点 路由",
+    "api-discovery": "api swagger openapi graphql endpoint rest 发现 接口 端点",
+    "xss-reflected": "xss reflected stored dom cross site script 跨站 反射",
+    "sqli-sqlmap": "sqli sqlmap sql injection 注入 数据库",
+    "ssrf": "ssrf server side request forgery metadata cloud 内网",
+    "idor": "idor object reference authz authorization 越权 对象",
+    "bola": "bola object authorization authz idor api 对象级 授权 越权",
+    "bfla": "bfla function authorization authz api 功能级 授权 越权",
+    "mass-assignment": "mass assignment api role isadmin 批量赋值 权限字段",
+    "jwt-none-attack": "jwt none token signature api 签名",
+    "rate-limit-bypass": "rate limit bypass api brute force 速率 限流",
+}
 
 
 def now_text() -> str:
@@ -794,6 +808,87 @@ def cmd_review_agent_output(args: argparse.Namespace) -> int:
     return 0
 
 
+def skill_catalog(root: Path) -> list[dict[str, str]]:
+    readme = root / "skills" / "README.md"
+    if not readme.exists():
+        raise SystemExit(f"Skills README not found: {readme}")
+    catalog: list[dict[str, str]] = []
+    for line in read_text(readme).splitlines():
+        match = re.match(r"\| \[([^\]]+)\]\(([^)]+)\) \| ([^|]+) \|", line.strip())
+        if not match:
+            continue
+        name = match.group(1).strip()
+        path = match.group(2).strip().replace("\\", "/")
+        summary = match.group(3).strip()
+        role = path.split("/", 1)[0] if "/" in path else "general"
+        catalog.append(
+            {
+                "name": name,
+                "path": f"skills/{path}",
+                "summary": summary,
+                "role": role,
+                "aliases": SKILL_ALIASES.get(name, ""),
+            }
+        )
+    return catalog
+
+
+def query_terms(query: str) -> list[str]:
+    return [term for term in re.split(r"[\s,;/|]+", query.lower()) if term]
+
+
+def skill_score(skill: dict[str, str], query: str) -> int:
+    lowered_query = query.lower()
+    terms = query_terms(lowered_query)
+    haystack = " ".join(
+        [
+            skill["name"],
+            skill["path"],
+            skill["summary"],
+            skill["role"],
+            skill["aliases"],
+        ]
+    ).lower()
+    score = 0
+    if lowered_query and lowered_query in haystack:
+        score += 3
+    for term in terms:
+        if term in haystack:
+            score += 2 if term in skill["name"].lower() else 1
+    return score
+
+
+def cmd_suggest_skills(args: argparse.Namespace) -> int:
+    root = workspace_root()
+    query = " ".join(args.query).strip()
+    catalog = skill_catalog(root)
+    scored = []
+    for skill in catalog:
+        if args.role and skill["role"] != args.role:
+            continue
+        score = skill_score(skill, query)
+        if score > 0:
+            scored.append((score, skill))
+    scored.sort(key=lambda item: (-item[0], item[1]["role"], item[1]["name"]))
+    selected = [skill for _, skill in scored[: args.limit]]
+
+    print("# Skill 推荐")
+    print()
+    print(f"- 查询：{query}")
+    print()
+    print("| Skill | 建议 agent role | Skill 路径 | 适用场景摘要 |")
+    print("| --- | --- | --- | --- |")
+    if not selected:
+        print("| 无 |  |  | 未匹配到正式 skill |")
+        return 0
+    for skill in selected:
+        print(
+            f"| {table_cell(skill['name'])} | {table_cell(skill['role'])} | "
+            f"{table_cell(skill['path'])} | {table_cell(skill['summary'])} |"
+        )
+    return 0
+
+
 def heading_title(text: str, prefix: str) -> str:
     for line in text.splitlines():
         if line.startswith(prefix):
@@ -1112,6 +1207,12 @@ def build_parser() -> argparse.ArgumentParser:
     review_agent_parser.add_argument("project")
     review_agent_parser.add_argument("output", help="JSON file or Markdown file with fenced JSON")
     review_agent_parser.set_defaults(func=cmd_review_agent_output)
+
+    suggest_parser = subparsers.add_parser("suggest-skills", help="recommend formal skills for a test surface")
+    suggest_parser.add_argument("query", nargs="+")
+    suggest_parser.add_argument("--role", choices=("recon", "web", "api"), default="")
+    suggest_parser.add_argument("--limit", type=int, default=5)
+    suggest_parser.set_defaults(func=cmd_suggest_skills)
 
     report_parser = subparsers.add_parser("report", help="generate report draft")
     report_parser.add_argument("project")

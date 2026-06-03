@@ -44,6 +44,7 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("static-js", result.stdout)
         self.assertIn("merge", result.stdout)
         self.assertIn("review-agent-output", result.stdout)
+        self.assertIn("suggest-skills", result.stdout)
         self.assertIn("doctor-recon", result.stdout)
 
     def test_new_copies_project_templates(self) -> None:
@@ -254,6 +255,22 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("Existing IDOR", review.stdout)
         self.assertIn("重复项", review.stdout)
         self.assertIn("候选 Finding", review.stdout)
+
+    def test_suggest_skills_recommends_web_api_and_recon(self) -> None:
+        recon = self.run_cli("suggest-skills", "子域名", "dns", "recon", "--limit", "3")
+        self.assertIn("subdomain-enumeration", recon.stdout)
+        self.assertIn("skills/recon/subdomain-enumeration/SKILL.md", recon.stdout)
+        self.assertIn("| subdomain-enumeration | recon |", recon.stdout)
+
+        web = self.run_cli("suggest-skills", "xss", "反射", "--limit", "3")
+        self.assertIn("xss-reflected", web.stdout)
+        self.assertIn("skills/web/xss-reflected/SKILL.md", web.stdout)
+        self.assertIn("| xss-reflected | web |", web.stdout)
+
+        api = self.run_cli("suggest-skills", "bola", "object", "authorization", "api", "--limit", "3")
+        self.assertIn("bola", api.stdout)
+        self.assertIn("skills/api/bola/SKILL.md", api.stdout)
+        self.assertIn("| bola | api |", api.stdout)
 
     def test_run_new_creates_numbered_run_templates(self) -> None:
         self.run_cli("new", "cli-test", "--target", "https://example.test")
