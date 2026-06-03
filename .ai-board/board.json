@@ -6,7 +6,7 @@
   },
   "next_id": 37,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T04:01:23+00:00",
+  "updated_at": "2026-06-03T04:04:33+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -33,13 +33,13 @@
     {
       "id": "codex",
       "kind": "codex",
-      "status": "busy",
-      "task_id": "T-0036",
-      "lease_expires_at": "2026-06-03T08:01:23+00:00",
+      "status": "idle",
+      "task_id": "",
+      "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T04:01:23+00:00",
+      "updated_at": "2026-06-03T04:04:26+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T03:43:22+00:00"
+      "released_at": "2026-06-03T04:04:26+00:00"
     }
   ],
   "tasks": [
@@ -214,42 +214,6 @@
       "updated_at": "2026-06-03T02:33:34+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
-    },
-    {
-      "id": "T-0036",
-      "title": "初始化 git 项目管理基线",
-      "description": "",
-      "priority": "P1",
-      "status": "active",
-      "lane": "项目治理",
-      "source": "user",
-      "owner_agent": "codex",
-      "scope": [
-        ".gitignore",
-        "docs/当前状态.md",
-        "refer/README.md"
-      ],
-      "verify_scope": [
-        ".gitignore",
-        "docs/归档计划看板.md",
-        "docs/当前状态.md",
-        "docs/计划看板.md"
-      ],
-      "depends_on": [],
-      "acceptance": [
-        "项目根目录初始化 git 仓库",
-        "新增 .gitignore，排除缓存、构建产物、虚拟环境、临时输出和本机 refer 原始资料",
-        "完成当前项目基线提交，并同步 docs/当前状态.md"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-03T04:01:16+00:00",
-      "updated_at": "2026-06-03T04:01:23+00:00",
-      "lock_owner": "codex",
-      "lease_expires_at": "2026-06-03T08:01:23+00:00",
-      "locked_at": "2026-06-03T04:01:23+00:00",
-      "started_at": "2026-06-03T04:01:23+00:00"
     }
   ],
   "archive": [
@@ -1348,6 +1312,44 @@
       "started_at": "2026-06-03T03:40:55+00:00",
       "completed_at": "2026-06-03T03:43:22+00:00",
       "archived_at": "2026-06-03T03:43:29+00:00"
+    },
+    {
+      "id": "T-0036",
+      "title": "初始化 git 项目管理基线",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "项目治理",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        ".gitignore",
+        "docs/当前状态.md",
+        "refer/README.md"
+      ],
+      "verify_scope": [
+        ".gitignore",
+        "docs/归档计划看板.md",
+        "docs/当前状态.md",
+        "docs/计划看板.md"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "项目根目录初始化 git 仓库",
+        "新增 .gitignore，排除缓存、构建产物、虚拟环境、临时输出和本机 refer 原始资料",
+        "完成当前项目基线提交，并同步 docs/当前状态.md"
+      ],
+      "verification": "已初始化 Git 仓库；新增 .gitignore 和 refer/README.md；确认 refer/fuzzDicts、refer/xalgorix、cli/.venv、__pycache__ 均被忽略；已完成基线提交 d92a967；已运行 uv run --project cli python -X utf8 -m unittest discover -s tests，8 个测试通过。",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-03T04:01:16+00:00",
+      "updated_at": "2026-06-03T04:04:33+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T04:01:23+00:00",
+      "started_at": "2026-06-03T04:01:23+00:00",
+      "completed_at": "2026-06-03T04:04:26+00:00",
+      "archived_at": "2026-06-03T04:04:33+00:00"
     }
   ]
 }
