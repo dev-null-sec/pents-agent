@@ -36,30 +36,49 @@ RECON_TOOLS = (
         "purpose": "被动子域名收集",
         "impact": "被动来源覆盖会变少，子域名初始清单质量下降。",
         "install": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
+        "kind": "go",
+    },
+    {
+        "name": "puredns",
+        "purpose": "主动 DNS 主引擎：配合 massdns 做完整字典枚举和 wildcard 去噪",
+        "impact": "无法使用推荐的 puredns + massdns 主链路执行完整主动 DNS 枚举。",
+        "install": "go install -v github.com/d3mondev/puredns/v2@latest",
+        "kind": "go",
+    },
+    {
+        "name": "massdns",
+        "purpose": "高性能 DNS 解析引擎：puredns 和 shuffledns 的核心依赖",
+        "impact": "puredns/shuffledns 即使已安装，也无法稳定执行高性能主动 DNS 枚举。",
+        "install": "https://github.com/blechschmidt/massdns",
+        "kind": "manual",
     },
     {
         "name": "dnsx",
-        "purpose": "DNS 解析验证、记录查询和主动 DNS 枚举辅助",
-        "impact": "无法批量验证子域名解析结果，也难以做 wildcard 去噪。",
+        "purpose": "DNS 复核工具：resolver 健康检查、A/AAAA/CNAME 复核、小列表解析和 fallback",
+        "impact": "无法快速复核子域名解析结果，也缺少轻量 DNS 检查 fallback。",
         "install": "go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest",
+        "kind": "go",
     },
     {
         "name": "httpx",
         "purpose": "HTTP 存活探测、标题、状态码和技术栈识别",
         "impact": "无法批量确认 Web/API 入口存活和基础指纹。",
         "install": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest",
+        "kind": "go",
     },
     {
         "name": "shuffledns",
-        "purpose": "主动 DNS 子域名字典枚举和 wildcard 处理",
-        "impact": "无法用默认子域名字典做受控批量 DNS 枚举。",
+        "purpose": "主动 DNS 兼容替代：配合 massdns 做 ProjectDiscovery 风格字典枚举",
+        "impact": "无法使用 shuffledns + massdns 作为主动 DNS 枚举替代链路。",
         "install": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest",
+        "kind": "go",
     },
     {
         "name": "subzy",
         "purpose": "子域名接管风险提示",
         "impact": "无法自动提示疑似接管风险，需要人工检查 CNAME 和第三方服务状态。",
         "install": "go install -v github.com/PentestPad/subzy@latest",
+        "kind": "go",
     },
 )
 STATIC_JS_PARAM_HINTS = (
@@ -345,12 +364,43 @@ def platform_label() -> str:
     return system or "unknown"
 
 
+def local_tool_bin_dir(root: Path) -> Path:
+    return root / "tools" / "third-party" / "bin"
+
+
+def find_local_tool(root: Path, name: str) -> Path | None:
+    bin_dir = local_tool_bin_dir(root)
+    suffixes = ("", ".exe", ".cmd", ".bat") if platform.system() == "Windows" else ("", ".exe")
+    for suffix in suffixes:
+        candidate = bin_dir / f"{name}{suffix}"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def find_recon_tool(root: Path, name: str) -> tuple[str, str]:
+    local_path = find_local_tool(root, name)
+    if local_path:
+        return str(local_path), "tools/third-party/bin"
+    path = shutil.which(name)
+    if path:
+        return path, "PATH"
+    return "", ""
+
+
 def install_guidance(tool: dict[str, str]) -> list[str]:
     command = tool["install"]
+    if tool.get("kind") == "manual":
+        return [
+            f"Windows：从官方 release 下载，或从 `tools/third-party/vendor/{tool['name']}/` 构建，把可执行文件放入 `tools/third-party/bin/`。",
+            f"WSL/Linux：从官方源码构建或下载 release，把可执行文件放入 `tools/third-party/bin/` 或加入 PATH。",
+            f"macOS：从官方源码构建或下载 release，把可执行文件放入 `tools/third-party/bin/` 或加入 PATH。",
+            f"来源参考：{command}",
+        ]
     return [
-        f"Windows：优先在 WSL 中安装；也可下载 release 二进制加入 PATH。Go 安装：{command}",
-        f"WSL/Linux：安装 Go 后运行 `{command}`，并确认 `$HOME/go/bin` 在 PATH。",
-        f"macOS：可用 Go 安装 `{command}`；ProjectDiscovery 工具也可参考官方 Homebrew 安装方式。",
+        f"Windows：优先安装到项目 `tools/third-party/bin/`：先设置 `$env:GOBIN=(Resolve-Path '.\\tools\\third-party\\bin').Path`，再运行 `{command}`。",
+        f"WSL/Linux：安装 Go 后把 GOBIN 指向项目 `tools/third-party/bin/`，再运行 `{command}`；PATH 只作为 fallback。",
+        f"macOS：可用 Go 安装到项目 `tools/third-party/bin/`；ProjectDiscovery 工具也可参考官方 Homebrew 方式，但项目本地目录优先。",
     ]
 
 
@@ -1056,14 +1106,19 @@ def cmd_report(args: argparse.Namespace) -> int:
 
 def cmd_doctor_recon(args: argparse.Namespace) -> int:
     missing: list[str] = []
+    root = workspace_root()
+    local_bin = local_tool_bin_dir(root)
     print("Recon 工具检查")
     print(f"当前环境：{platform_label()}")
+    print(f"项目第三方工具目录：{local_bin}")
+    print("查找顺序：tools/third-party/bin -> 系统 PATH。PATH 只作为 fallback，不是推荐安装位置。")
+    print("主动 DNS 默认主链路：puredns + massdns；兼容替代：shuffledns + massdns；dnsx 用于复核和小规模 fallback。")
     print("本机下载提示：涉及国外网络的拉取/下载，可在本机 PowerShell 临时设置 `$env:all_proxy='http://127.0.0.1:7890'`；不要把这个本机代理配置套到远端机器。")
-    print("安装建议按环境区分：Windows 优先 WSL 或 release 二进制；WSL/Linux 优先 Go 安装；macOS 可用 Go 或官方 Homebrew 方式。")
+    print("安装建议按环境区分：Windows/WSL/Linux/macOS 都优先写入项目第三方工具目录；全局 PATH 仅兜底。")
     print()
 
     for tool in RECON_TOOLS:
-        path = shutil.which(tool["name"])
+        path, source = find_recon_tool(root, tool["name"])
         status = "OK" if path else "MISSING"
         if not path:
             missing.append(tool["name"])
@@ -1071,6 +1126,9 @@ def cmd_doctor_recon(args: argparse.Namespace) -> int:
         print(f"用途：{tool['purpose']}")
         if path:
             print(f"路径：{path}")
+            print(f"来源：{source}")
+            if source == "PATH":
+                print("提示：这是全局 PATH fallback；推荐迁移或重装到 `tools/third-party/bin/`。")
             if tool["name"] == "httpx":
                 print("提示：请确认这是 ProjectDiscovery httpx，不是 Python httpx 同名命令。")
         else:
@@ -1080,19 +1138,11 @@ def cmd_doctor_recon(args: argparse.Namespace) -> int:
                 print(f"- {line}")
         print()
 
-    massdns_path = shutil.which("massdns")
-    print(f"[{'OK' if massdns_path else 'MISSING'}] massdns（shuffledns 依赖）")
-    if massdns_path:
-        print(f"路径：{massdns_path}")
-    else:
-        print("影响：shuffledns 即使已安装，也可能无法执行主动 DNS 枚举；请按 shuffledns 文档补齐 massdns。")
-    print()
-
     if missing:
         print("结论：recon 工具链不完整。Claude 执行时必须在 progress/review 中写明缺失工具、受影响步骤和替代方案。")
         return 2 if args.strict else 0
 
-    print("结论：核心 recon 工具已在 PATH 中找到。仍需确认授权窗口、DNS 并发/速率、resolver 和字典规模后再执行主动扫描。")
+    print("结论：核心 recon 工具已找到。仍需确认授权窗口、DNS 并发/速率、resolver 和字典规模后再执行主动扫描。")
     return 0
 
 

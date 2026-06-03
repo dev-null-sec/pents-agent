@@ -1,0 +1,63 @@
+{
+  "install_target": "tools/third-party/bin",
+  "source_target": "tools/third-party/vendor",
+  "cache_target": "tools/third-party/cache",
+  "tools": [
+    {
+      "name": "puredns",
+      "role": "preferred active DNS brute force wrapper with wildcard filtering",
+      "upstream": "https://github.com/d3mondev/puredns",
+      "source_dir": "tools/third-party/vendor/puredns",
+      "binary": "puredns",
+      "install": "go install -v github.com/d3mondev/puredns/v2@latest"
+    },
+    {
+      "name": "massdns",
+      "role": "high-performance DNS resolver engine required by puredns and shuffledns",
+      "upstream": "https://github.com/blechschmidt/massdns",
+      "source_dir": "tools/third-party/vendor/massdns",
+      "binary": "massdns",
+      "install": "build or download release, then place massdns(.exe) in tools/third-party/bin"
+    },
+    {
+      "name": "shuffledns",
+      "role": "ProjectDiscovery-compatible active DNS brute force alternative",
+      "upstream": "https://github.com/projectdiscovery/shuffledns",
+      "source_dir": "tools/third-party/vendor/shuffledns",
+      "binary": "shuffledns",
+      "install": "go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest"
+    },
+    {
+      "name": "dnsx",
+      "role": "DNS verification, resolver health check, record query, and fallback list resolver",
+      "upstream": "https://github.com/projectdiscovery/dnsx",
+      "source_dir": "tools/third-party/vendor/dnsx",
+      "binary": "dnsx",
+      "install": "go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest"
+    },
+    {
+      "name": "subfinder",
+      "role": "passive subdomain discovery",
+      "upstream": "https://github.com/projectdiscovery/subfinder",
+      "source_dir": "tools/third-party/vendor/subfinder",
+      "binary": "subfinder",
+      "install": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+    },
+    {
+      "name": "httpx",
+      "role": "HTTP probing and fingerprint summary",
+      "upstream": "https://github.com/projectdiscovery/httpx",
+      "source_dir": "tools/third-party/vendor/httpx",
+      "binary": "httpx",
+      "install": "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"
+    },
+    {
+      "name": "subzy",
+      "role": "subdomain takeover risk hinting",
+      "upstream": "https://github.com/PentestPad/subzy",
+      "source_dir": "tools/third-party/vendor/subzy",
+      "binary": "subzy",
+      "install": "go install -v github.com/PentestPad/subzy@latest"
+    }
+  ]
+}

@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 45,
+  "next_id": 46,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T08:32:28+00:00",
+  "updated_at": "2026-06-03T09:35:50+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,19 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T08:32:27+00:00",
+      "updated_at": "2026-06-03T09:35:40+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T08:32:27+00:00"
+      "released_at": "2026-06-03T09:35:40+00:00"
+    },
+    {
+      "id": "claude-code",
+      "kind": "claude-code",
+      "status": "busy",
+      "task_id": "T-0042",
+      "lease_expires_at": "2026-06-03T12:36:28+00:00",
+      "created_at": "2026-06-03T08:36:28+00:00",
+      "updated_at": "2026-06-03T08:36:28+00:00",
+      "claimed_at": "2026-06-03T08:36:28+00:00"
     }
   ],
   "tasks": [
@@ -176,11 +186,14 @@
       "title": "由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举",
       "description": "",
       "priority": "P0",
-      "status": "scheduled",
+      "status": "active",
       "lane": "默认",
       "source": "",
-      "owner_agent": "",
-      "scope": [],
+      "owner_agent": "claude-code",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e"
+      ],
       "verify_scope": [],
       "depends_on": [],
       "acceptance": [
@@ -190,9 +203,11 @@
       "deferred_verification": "",
       "leftovers": "",
       "created_at": "2026-06-03T08:08:33+00:00",
-      "updated_at": "2026-06-03T08:18:22+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
+      "updated_at": "2026-06-03T08:36:28+00:00",
+      "lock_owner": "claude-code",
+      "lease_expires_at": "2026-06-03T12:36:28+00:00",
+      "locked_at": "2026-06-03T08:36:28+00:00",
+      "started_at": "2026-06-03T08:36:28+00:00"
     },
     {
       "id": "T-0043",
@@ -1602,6 +1617,41 @@
       "started_at": "2026-06-03T08:30:50+00:00",
       "completed_at": "2026-06-03T08:32:27+00:00",
       "archived_at": "2026-06-03T08:32:28+00:00"
+    },
+    {
+      "id": "T-0045",
+      "title": "规范第三方 recon 工具安装位置并升级 doctor-recon",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        ".gitignore",
+        "cli",
+        "dicts",
+        "docs/决策记录.md",
+        "docs/项目路线",
+        "tests",
+        "tools"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "第三方 recon 二进制统一安装到 workspace-local tools/bin（不入仓）；.gitignore 忽略 tools/bin/tools/cache 等本地安装目录；pents doctor-recon 优先检查 tools/bin，再检查 PATH，并区分 dnsx 复核工具与 puredns/massdns 主动 DNS 主引擎；文档记录 dnsx 当前全局安装位置属于历史偏差和修正规范"
+      ],
+      "verification": "已将第三方工具分类修正为 tools/third-party/install、vendor、patches、bin、cache；pents doctor-recon 已优先检查 tools/third-party/bin 再检查 PATH，并区分 puredns+massdns 主动 DNS 主链路、shuffledns+massdns 替代链路、dnsx 复核/fallback。验证：uv run --project cli python -X utf8 -m unittest discover -s tests 通过 11 个测试；uv run --project cli pents doctor-recon 可输出项目第三方工具目录、PATH fallback 提示，并识别当前 dnsx 位于 C:\\Users\\Administrator\\go\\bin\\dnsx.EXE。",
+      "deferred_verification": "",
+      "leftovers": "docs/当前状态.md 仍由 T-0042 的 claude-code 锁定，本轮未更新；dnsx 仍在全局 PATH，后续应迁移或重装到 tools/third-party/bin；如需把二进制随项目离线迁移，建议后续单独排 Git LFS/release artifact/备份包方案。",
+      "created_at": "2026-06-03T09:22:58+00:00",
+      "updated_at": "2026-06-03T09:35:50+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T09:22:58+00:00",
+      "started_at": "2026-06-03T09:22:58+00:00",
+      "completed_at": "2026-06-03T09:35:40+00:00",
+      "archived_at": "2026-06-03T09:35:50+00:00"
     }
   ]
 }

@@ -328,7 +328,11 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("当前环境", result.stdout)
         self.assertIn("all_proxy", result.stdout)
         self.assertIn("不要把这个本机代理配置套到远端机器", result.stdout)
-        for tool in ("subfinder", "dnsx", "httpx", "shuffledns", "subzy", "massdns"):
+        self.assertIn("tools/third-party/bin", result.stdout)
+        self.assertIn("puredns + massdns", result.stdout)
+        self.assertIn("复核", result.stdout)
+        self.assertIn("fallback", result.stdout)
+        for tool in ("subfinder", "puredns", "massdns", "dnsx", "httpx", "shuffledns", "subzy"):
             self.assertIn(tool, result.stdout)
         for platform_name in ("Windows", "WSL/Linux", "macOS"):
             self.assertIn(platform_name, result.stdout)
