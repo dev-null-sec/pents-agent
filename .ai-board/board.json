@@ -6,7 +6,7 @@
   },
   "next_id": 46,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T10:03:29+00:00",
+  "updated_at": "2026-06-03T10:15:40+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T10:03:21+00:00",
+      "updated_at": "2026-06-03T10:15:30+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T10:03:21+00:00"
+      "released_at": "2026-06-03T10:15:30+00:00"
     },
     {
       "id": "claude-code",
@@ -162,29 +162,6 @@
       "lease_expires_at": "2026-06-03T12:36:28+00:00",
       "locked_at": "2026-06-03T08:36:28+00:00",
       "started_at": "2026-06-03T08:36:28+00:00"
-    },
-    {
-      "id": "T-0043",
-      "title": "建立短指令到任务卡的 AI 自主申领流程",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "用户只需给目标和简短边界；AI 先读 docs/计划看板.md 和相关任务卡，信息不足时反问，信息足够时自行生成或申领任务卡；任务卡必须包含目标、范围、禁止动作、输入缺口、验收、回填文件和完成归档要求；避免让用户手写长提示词"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-03T08:30:50+00:00",
-      "updated_at": "2026-06-03T08:30:50+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
     }
   ],
   "archive": [
@@ -1667,6 +1644,39 @@
       "started_at": "2026-06-03T09:56:26+00:00",
       "completed_at": "2026-06-03T10:03:21+00:00",
       "archived_at": "2026-06-03T10:03:29+00:00"
+    },
+    {
+      "id": "T-0043",
+      "title": "建立短指令到任务卡的 AI 自主申领流程",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "CLAUDE.md",
+        "cli/src/pents/cli.py",
+        "docs/项目路线",
+        "templates/brief.md",
+        "tests/test_pents_cli.py"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "用户只需给目标和简短边界；AI 先读 docs/计划看板.md 和相关任务卡，信息不足时反问，信息足够时自行生成或申领任务卡；任务卡必须包含目标、范围、禁止动作、输入缺口、验收、回填文件和完成归档要求；避免让用户手写长提示词"
+      ],
+      "verification": "已建立短指令到任务卡流程：CLAUDE.md 新增短指令处理协议；templates/brief.md 增加用户短指令、范围、禁止动作、输入缺口、验收标准、回填文件、完成归档要求；pents brief 增加对应参数并支持按 task-id-agent 保存；docs/项目路线/短指令任务卡流程.md 记录人机分工和反问规则。验证：uv run --project cli python -X utf8 -m unittest discover -s tests 通过 13 个测试；uv run --project cli pents --help 正常输出。",
+      "deferred_verification": "",
+      "leftovers": "docs/当前状态.md 仍由 T-0042 claude-code 锁定，本轮未更新。",
+      "created_at": "2026-06-03T08:30:50+00:00",
+      "updated_at": "2026-06-03T10:15:40+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T10:10:34+00:00",
+      "started_at": "2026-06-03T10:10:34+00:00",
+      "completed_at": "2026-06-03T10:15:30+00:00",
+      "archived_at": "2026-06-03T10:15:40+00:00"
     }
   ]
 }

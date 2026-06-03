@@ -77,11 +77,63 @@ class PentsCliTests(unittest.TestCase):
         brief = self.run_cli("brief", "cli-test", "--agent", "api", "--objective", "check authz")
         self.assertIn("代理角色：api", brief.stdout)
         self.assertIn("check authz", brief.stdout)
+        self.assertIn("输入缺口", brief.stdout)
 
         self.run_cli("report", "cli-test", "--tester", "codex")
         report = self.read_project("report.md")
         self.assertIn("Reflected XSS", report)
         self.assertIn("漏洞汇总", report)
+
+    def test_brief_builds_task_card_from_short_request(self) -> None:
+        self.run_cli("new", "cli-test", "--target", "*.devnu11.cn")
+
+        result = self.run_cli(
+            "brief",
+            "cli-test",
+            "--agent",
+            "recon",
+            "--task-id",
+            "T-0042",
+            "--request",
+            "对 *.devnu11.cn 做主动 DNS，别碰 HTTP",
+            "--objective",
+            "生成主动 DNS 枚举计划并回填证据",
+            "--in-scope",
+            "*.devnu11.cn DNS 子域名枚举",
+            "--out-of-scope",
+            "HTTP 探测",
+            "--forbid",
+            "端口扫描",
+            "--stop",
+            "canary 未命中时停止",
+            "--target",
+            "*.devnu11.cn|主动 DNS|使用 subdomains-main.txt",
+            "--input-gap",
+            "canary 子域名",
+            "--reference",
+            "skill|skills/recon/subdomain-enumeration/SKILL.md|主动 DNS checklist",
+            "--acceptance",
+            "包含 canary、NXDOMAIN、resolver 自检",
+            "--writeback",
+            "runs/R002/outputs/active-dns-plan.md",
+            "--completion",
+            "执行后按 ai-board complete/archive",
+            "--save",
+        )
+
+        self.assertIn("Created brief", result.stdout)
+        saved = self.project / "briefs" / "t-0042-recon.md"
+        self.assertTrue(saved.exists())
+        text = saved.read_text(encoding="utf-8")
+        self.assertIn("用户短指令：对 *.devnu11.cn 做主动 DNS，别碰 HTTP", text)
+        self.assertIn("*.devnu11.cn DNS 子域名枚举", text)
+        self.assertIn("HTTP 探测", text)
+        self.assertIn("端口扫描", text)
+        self.assertIn("| *.devnu11.cn | 主动 DNS | 使用 subdomains-main.txt |", text)
+        self.assertIn("canary 子域名", text)
+        self.assertIn("包含 canary、NXDOMAIN、resolver 自检", text)
+        self.assertIn("runs/R002/outputs/active-dns-plan.md", text)
+        self.assertIn("执行后按 ai-board complete/archive", text)
 
     def test_evidence_records_js_file_chain_metadata(self) -> None:
         self.run_cli("new", "cli-test", "--target", "https://example.test")

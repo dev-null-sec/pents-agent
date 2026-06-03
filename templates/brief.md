@@ -6,30 +6,59 @@
 - 代理角色：{{agent_role}}
 - 创建时间：{{created_at}}
 - 任务编号：{{task_id}}
+- 用户短指令：{{request_summary}}
 
 ## 授权范围摘要
 
-- 测试范围内：
-- 不在范围内：
-- 禁止动作：
-- 停止条件：
+### 测试范围内
+
+{{in_scope_items}}
+
+### 不在范围内
+
+{{out_of_scope_items}}
+
+### 禁止动作
+
+{{forbidden_items}}
+
+### 停止条件
+
+{{stop_items}}
 
 ## 目标子集
 
 | 目标 | 测试面 | 备注 |
 | --- | --- | --- |
-|  |  |  |
+{{target_rows}}
 
 ## 任务目标
 
 {{objective}}
 
+## 输入缺口
+
+{{input_gap_items}}
+
+信息不足时，先向主代理或用户反问，不要自行猜测授权、账号、速率、窗口、目标入口或禁止动作。
+
 ## 参考资料建议
 
 | 类型 | 路径 | 备注 |
 | --- | --- | --- |
-| skill |  |  |
-| refer |  |  |
+{{reference_rows}}
+
+## 验收标准
+
+{{acceptance_items}}
+
+## 回填文件
+
+{{writeback_items}}
+
+## 完成与归档要求
+
+{{completion_items}}
 
 ## 输出要求
 

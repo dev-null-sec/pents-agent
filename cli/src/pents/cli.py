@@ -851,6 +851,22 @@ def cmd_finding(args: argparse.Namespace) -> int:
     return 0
 
 
+def brief_items(values: list[str], fallback: str = "待补充") -> str:
+    items = [value.strip() for value in values if value.strip()]
+    return "\n".join(f"- {value}" for value in items) if items else f"- {fallback}"
+
+
+def brief_table_rows(values: list[str], columns: int) -> str:
+    rows: list[str] = []
+    for value in values:
+        parts = [part.strip() for part in value.split("|")]
+        parts = (parts + [""] * columns)[:columns]
+        rows.append("| " + " | ".join(table_cell(part) for part in parts) + " |")
+    if rows:
+        return "\n".join(rows)
+    return "| 待补充 |  |  |"
+
+
 def cmd_brief(args: argparse.Namespace) -> int:
     root = workspace_root()
     project = ensure_project(root, args.project)
@@ -859,11 +875,23 @@ def cmd_brief(args: argparse.Namespace) -> int:
         "agent_role": args.agent,
         "created_at": now_text(),
         "task_id": args.task_id or "",
+        "request_summary": args.request or "",
         "objective": args.objective or "",
+        "in_scope_items": brief_items(args.in_scope),
+        "out_of_scope_items": brief_items(args.out_of_scope, "未声明"),
+        "forbidden_items": brief_items(args.forbid, "未声明；执行前必须确认"),
+        "stop_items": brief_items(args.stop, "响应异常、疑似越界、证据不足或触发风控时停止"),
+        "target_rows": brief_table_rows(args.target, 3),
+        "input_gap_items": brief_items(args.input_gap, "无；若执行中发现缺口必须补记"),
+        "reference_rows": brief_table_rows(args.reference, 3),
+        "acceptance_items": brief_items(args.acceptance, "输出结构化结果并说明证据/阻塞"),
+        "writeback_items": brief_items(args.writeback, "inventory.md、evidence.md、progress.md、review.md"),
+        "completion_items": brief_items(args.completion, "回填记录、说明遗留问题，并按 ai-board 完成/归档任务"),
     }
     content = fill_template(read_text(template_dir(root) / "brief.md"), values)
     if args.save:
-        target = project / "briefs" / f"{args.agent}.md"
+        filename = f"{slugify(args.task_id)}-{slugify(args.agent)}.md" if args.task_id else f"{slugify(args.agent)}.md"
+        target = project / "briefs" / filename
         write_text(target, content)
         print(f"Created brief: {target}")
     else:
@@ -1527,7 +1555,18 @@ def build_parser() -> argparse.ArgumentParser:
     brief_parser.add_argument("project")
     brief_parser.add_argument("--agent", required=True)
     brief_parser.add_argument("--task-id", default="")
+    brief_parser.add_argument("--request", default="", help="original short user request")
     brief_parser.add_argument("--objective", default="")
+    brief_parser.add_argument("--in-scope", action="append", default=[], help="authorized scope item")
+    brief_parser.add_argument("--out-of-scope", action="append", default=[], help="explicitly excluded scope item")
+    brief_parser.add_argument("--forbid", action="append", default=[], help="forbidden action")
+    brief_parser.add_argument("--stop", action="append", default=[], help="stop condition")
+    brief_parser.add_argument("--target", action="append", default=[], help="target row: target|surface|notes")
+    brief_parser.add_argument("--input-gap", action="append", default=[], help="missing input that must be confirmed")
+    brief_parser.add_argument("--reference", action="append", default=[], help="reference row: type|path|notes")
+    brief_parser.add_argument("--acceptance", action="append", default=[], help="acceptance criterion")
+    brief_parser.add_argument("--writeback", action="append", default=[], help="file or record to update")
+    brief_parser.add_argument("--completion", action="append", default=[], help="completion/archive requirement")
     brief_parser.add_argument("--save", action="store_true")
     brief_parser.set_defaults(func=cmd_brief)
 
