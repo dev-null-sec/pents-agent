@@ -9,6 +9,7 @@
       "upstream": "https://github.com/d3mondev/puredns",
       "source_dir": "tools/third-party/vendor/puredns",
       "binary": "puredns",
+      "installed_version": "v2.1.1",
       "install": "go install -v github.com/d3mondev/puredns/v2@latest"
     },
     {
@@ -17,7 +18,9 @@
       "upstream": "https://github.com/blechschmidt/massdns",
       "source_dir": "tools/third-party/vendor/massdns",
       "binary": "massdns",
-      "install": "build or download release, then place massdns(.exe) in tools/third-party/bin"
+      "installed_version": "v1.1.0",
+      "runtime_note": "Windows build was compiled from official v1.1.0 source with Cygwin gcc-core/make and needs cygwin1.dll beside massdns.exe.",
+      "install": "build official source with Cygwin on Windows, then place massdns.exe and cygwin1.dll in tools/third-party/bin"
     },
     {
       "name": "shuffledns",
@@ -33,6 +36,7 @@
       "upstream": "https://github.com/projectdiscovery/dnsx",
       "source_dir": "tools/third-party/vendor/dnsx",
       "binary": "dnsx",
+      "installed_version": "v1.2.3",
       "install": "go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest"
     },
     {

@@ -442,6 +442,28 @@ def shell_quote(value: str) -> str:
     return "'" + value.replace("'", "'\"'\"'") + "'"
 
 
+def command_tool(root: Path, name: str) -> str:
+    local_path = find_local_tool(root, name)
+    if local_path:
+        return shell_quote(path_text(root, local_path))
+    return name
+
+
+def timed_shell_command(command: str) -> str:
+    if command.lstrip().startswith("#"):
+        return command
+    return "\n".join(
+        [
+            "START=$(date +%s)",
+            command,
+            "STATUS=$?",
+            "END=$(date +%s)",
+            'echo "elapsed: $((END - START))s; exit=$STATUS"',
+            "test $STATUS -eq 0",
+        ]
+    )
+
+
 def count_lines(path: Path) -> int:
     count = 0
     with path.open("r", encoding="utf-8", errors="ignore") as handle:
@@ -505,25 +527,34 @@ def active_dns_enum_commands(
     retry: str,
     timeout: str,
     threads: str,
+    rate_limit: str,
 ) -> list[str]:
+    puredns_cmd = command_tool(root, "puredns")
+    massdns_cmd = command_tool(root, "massdns")
+    shuffledns_cmd = command_tool(root, "shuffledns")
+    dnsx_cmd = command_tool(root, "dnsx")
     dict_arg = shell_quote(path_text(root, dict_path))
     resolvers_arg = shell_quote(path_text(root, resolvers_file))
     raw_prefix = path_text(root, raw_dir)
     hits = shell_quote(f"{raw_prefix}/active-dns-hits.txt")
+    massdns_out = shell_quote(f"{raw_prefix}/active-dns-massdns.txt")
     if engine == "puredns":
         return [
-            f"puredns bruteforce {dict_arg} {shell_quote(domain)} -r {resolvers_arg} -w {hits}",
+            (
+                f"{puredns_cmd} bruteforce {dict_arg} {shell_quote(domain)} -r {resolvers_arg} "
+                f"-b {massdns_cmd} --rate-limit {rate_limit} -w {hits} --write-massdns {massdns_out}"
+            ),
         ]
     if engine == "shuffledns":
         return [
-            f"shuffledns -d {shell_quote(domain)} -w {dict_arg} -r {resolvers_arg} -o {hits}",
+            f"{shuffledns_cmd} -d {shell_quote(domain)} -w {dict_arg} -r {resolvers_arg} -o {hits}",
         ]
     candidates = shell_quote(f"{raw_prefix}/active-dns-candidates.txt")
     jsonl = shell_quote(f"{raw_prefix}/active-dns-dnsx.jsonl")
     return [
         f"awk '{{print $0\".{domain}\"}}' {dict_arg} > {candidates}",
         (
-            f"dnsx -silent -l {candidates} -r {shell_quote(resolvers_csv)} "
+            f"{dnsx_cmd} -silent -l {candidates} -r {shell_quote(resolvers_csv)} "
             f"-a -aaaa -cname -json -o {jsonl} -retry {retry} -timeout {timeout} -t {threads}"
         ),
         f"# 从 {jsonl} 提取命中 host，保存为 {hits}，再进入复核步骤。",
@@ -565,12 +596,17 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         tool_rows.append(f"| {name} | {status} | {source or '-'} | {note} |")
 
     commands: list[tuple[str, str]] = []
+    dnsx_cmd = command_tool(root, "dnsx")
     dnsx_common = f"-r {shell_quote(resolvers_csv)} -a -aaaa -cname -json -retry {args.retry} -timeout {args.timeout}"
+    verify_dnsx_common = (
+        f"-r {shell_quote(resolvers_csv)} -a -aaaa -cname -json "
+        f"-retry {args.verify_retry} -timeout {args.verify_timeout}"
+    )
     if canary_targets:
         commands.append(
             (
                 "canary 子域校验",
-                f"dnsx -silent -l {shell_quote(path_text(root, canary_file))} {dnsx_common} -o {shell_quote(path_text(root, canary_raw))}",
+                f"{dnsx_cmd} -silent -l {shell_quote(path_text(root, canary_file))} {dnsx_common} -o {shell_quote(path_text(root, canary_raw))}",
             )
         )
     resolver_source = canary_file if canary_targets else nx_file
@@ -581,7 +617,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
             (
                 f"resolver 自检：{resolver}",
                 (
-                    f"dnsx -silent -l {shell_quote(path_text(root, resolver_source))} -r {shell_quote(resolver)} "
+                    f"{dnsx_cmd} -silent -l {shell_quote(path_text(root, resolver_source))} -r {shell_quote(resolver)} "
                     f"-a -json -retry {args.retry} -timeout {args.timeout} -o {shell_quote(path_text(root, resolver_raw))}"
                 ),
             )
@@ -589,7 +625,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
     commands.append(
         (
             "随机 NXDOMAIN 泛解析检查",
-            f"dnsx -silent -l {shell_quote(path_text(root, nx_file))} {dnsx_common} -o {shell_quote(path_text(root, nx_raw))}",
+            f"{dnsx_cmd} -silent -l {shell_quote(path_text(root, nx_file))} {dnsx_common} -o {shell_quote(path_text(root, nx_raw))}",
         )
     )
     for index, command in enumerate(
@@ -604,6 +640,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
             args.retry,
             args.timeout,
             args.threads,
+            args.rate_limit,
         ),
         1,
     ):
@@ -612,7 +649,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         (
             "A/AAAA/CNAME 复核",
             (
-                f"dnsx -silent -l {shell_quote(path_text(root, hits_file))} {dnsx_common} "
+                f"{dnsx_cmd} -silent -l {shell_quote(path_text(root, hits_file))} {verify_dnsx_common} "
                 f"-o {shell_quote(path_text(root, verify_file))}"
             ),
         )
@@ -631,7 +668,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
 
     command_lines = []
     for title, command in commands:
-        command_lines.extend([f"### {title}", "", "```bash", command, "```", ""])
+        command_lines.extend([f"### {title}", "", "```bash", timed_shell_command(command), "```", ""])
 
     canary_text = ", ".join(canary_targets) if canary_targets else "未提供；正式执行前必须补充至少 1 个已知存在子域，例如 ai.<domain>"
     lines = [
@@ -642,6 +679,9 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         f"- 根域：`{domain}`",
         f"- 字典：`{path_text(root, dict_path)}`（{count_lines(dict_path)} 行）",
         f"- Resolver：`{resolvers_csv}`",
+        f"- dnsx 预检参数：`retry={args.retry}`、`timeout={args.timeout}`",
+        f"- dnsx 命中复核参数：`retry={args.verify_retry}`、`timeout={args.verify_timeout}`",
+        f"- puredns rate limit：`{args.rate_limit}` qps",
         f"- Canary：{canary_text}",
         f"- 随机 NXDOMAIN：`{nx_targets[0]}`",
         f"- 选择引擎：`{active_dns_engine_label(engine)}`",
@@ -651,6 +691,8 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         "- 推荐顺序：`puredns + massdns` -> `shuffledns + massdns` -> `dnsx -l fallback`。",
         "- `dnsx` 只作为 canary、resolver 自检、A/AAAA/CNAME 复核和小规模 fallback。",
         "- `dnsx -wd` 禁止作为常规枚举参数，避免 R001 暴露的 0 命中误判。",
+        "- 扫描类步骤必须记录 `elapsed` 和退出码，用于后续与 Claude Code 复测耗时对比。",
+        "- 执行前建议把项目本地工具目录加入 PATH：`export PATH=\"$PWD/tools/third-party/bin:$PATH\"`。",
         "",
         *tool_rows,
         "",
@@ -659,6 +701,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         "- Canary 子域无命中：停止完整字典枚举，先排查 resolver、字典拼接和工具参数。",
         "- 随机 NXDOMAIN 有 A/AAAA/CNAME 命中：停止并按泛解析/wildcard 场景处理。",
         "- 单个 resolver 超时或 0 响应：剔除该 resolver 后再进入完整枚举。",
+        "- 复核结果少于枚举命中时：不要直接丢弃命中，先提高复核 retry/timeout 或按 resolver 重新确认。",
         "- `puredns/massdns` 缺失时不要假装已走主链路；只能标注为替代链路或 fallback。",
         "",
         "## 输出文件",
@@ -1627,8 +1670,11 @@ def build_parser() -> argparse.ArgumentParser:
     active_dns_parser.add_argument("--nonce", default="", help="custom NXDOMAIN label for wildcard check")
     active_dns_parser.add_argument("--engine", choices=("auto", "puredns", "shuffledns", "dnsx"), default="auto")
     active_dns_parser.add_argument("--threads", default="1000", help="dnsx fallback thread count")
+    active_dns_parser.add_argument("--rate-limit", default="10000", help="puredns public resolver rate limit in qps")
     active_dns_parser.add_argument("--retry", default="1")
     active_dns_parser.add_argument("--timeout", default="2")
+    active_dns_parser.add_argument("--verify-retry", default="2", help="dnsx retry count for final hit verification")
+    active_dns_parser.add_argument("--verify-timeout", default="3", help="dnsx timeout for final hit verification")
     active_dns_parser.add_argument("--project", default="", help="project name for evidence command and saved outputs")
     active_dns_parser.add_argument("--run", default="", help="run directory name such as R002-2026-06-03-active-dns")
     active_dns_parser.add_argument("--save", action="store_true", help="save plan and helper input files")

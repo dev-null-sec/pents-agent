@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 46,
+  "next_id": 47,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T10:22:53+00:00",
+  "updated_at": "2026-06-03T11:24:37+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T10:22:41+00:00",
+      "updated_at": "2026-06-03T11:24:26+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T10:22:41+00:00"
+      "released_at": "2026-06-03T11:24:26+00:00"
     },
     {
       "id": "claude-code",
@@ -1683,6 +1683,39 @@
       "started_at": "2026-06-03T10:17:57+00:00",
       "completed_at": "2026-06-03T10:22:41+00:00",
       "archived_at": "2026-06-03T10:22:53+00:00"
+    },
+    {
+      "id": "T-0046",
+      "title": "补齐 puredns+massdns 主链路到 tools/third-party/bin",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "cli/src/pents/cli.py",
+        "docs/项目路线/工具与脚本资产结构.md",
+        "tools/third-party"
+      ],
+      "verify_scope": [
+        "tools/third-party docs/项目路线"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "puredns 与 massdns 已可在 tools/third-party/bin 找到；pents doctor-recon 能识别它们；pents active-dns 能优先选择 puredns+massdns 主链路；安装来源和版本记录清楚"
+      ],
+      "verification": "puredns v2.1.1、massdns v1.1.0、dnsx v1.2.3 已安装到 tools/third-party/bin；doctor-recon 能从项目本地识别三者；active-dns --engine auto 选择 puredns+massdns 并生成本地 bin、rate-limit、计时和 retry=2/timeout=3 复核命令；已对 *.devnu11.cn 用 subdomains-main.txt 跑完整 benchmark，主枚举 209.306s，可靠链路 235.596s，复核确认 3 条。",
+      "deferred_verification": "",
+      "leftovers": "subfinder/httpx/shuffledns/subzy 仍缺失，属于后续 recon 工具补齐范围；docs/当前状态.md 当前由 T-0042 Claude Code 锁定，本任务未更新该文件。",
+      "created_at": "2026-06-03T10:46:16+00:00",
+      "updated_at": "2026-06-03T11:24:37+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T10:53:13+00:00",
+      "started_at": "2026-06-03T10:50:33+00:00",
+      "completed_at": "2026-06-03T11:24:26+00:00",
+      "archived_at": "2026-06-03T11:24:37+00:00"
     }
   ]
 }

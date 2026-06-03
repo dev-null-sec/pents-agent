@@ -45,6 +45,13 @@ uv run --project cli pents doctor-recon
 
 `massdns` 是 `puredns` 和 `shuffledns` 的高性能 DNS 解析引擎。优先从官方仓库构建或下载 release，并把可执行文件放到 `tools/third-party/bin/`。
 
+当前 Windows 本地链路：
+
+- 上游版本：`blechschmidt/massdns` `v1.1.0`。
+- 源码位置：`tools/third-party/vendor/massdns/`。
+- 构建方式：Cygwin `gcc-core` + `make`，使用官方 `make nolinux` 等价参数编译。
+- 运行文件：`tools/third-party/bin/massdns.exe`，并把 Cygwin runtime `cygwin1.dll` 放在同目录，避免依赖系统 PATH。
+
 如果需要改 massdns 源码，把 fork 或源码放入 `tools/third-party/vendor/massdns/`，保留上游来源、版本和 LICENSE。
 
 ## 二开流程
