@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import platform
 import re
 import shutil
@@ -582,6 +583,217 @@ def cmd_static_js(args: argparse.Namespace) -> int:
     return 0
 
 
+def extract_json_payload(text: str) -> str:
+    json_fence = re.search(r"```json\s*(.*?)```", text, re.IGNORECASE | re.DOTALL)
+    if json_fence:
+        return json_fence.group(1).strip()
+    any_fence = re.search(r"```\s*(.*?)```", text, re.DOTALL)
+    if any_fence:
+        return any_fence.group(1).strip()
+    return text.strip()
+
+
+def load_agent_output(root: Path, project: Path, value: str) -> dict[str, object]:
+    path = resolve_project_input(root, project, value)
+    if not path.exists() or not path.is_file():
+        raise SystemExit(f"Agent output not found: {path}")
+    try:
+        data = json.loads(extract_json_payload(read_text(path)))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Agent output must be JSON or fenced JSON: {path}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit("Agent output must be a JSON object")
+    return data
+
+
+def list_value(data: dict[str, object], key: str) -> list[object]:
+    value = data.get(key, [])
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def text_value(item: object, *keys: str) -> str:
+    if isinstance(item, dict):
+        for key in keys:
+            value = item.get(key)
+            if value not in (None, ""):
+                return str(value)
+        return ""
+    return str(item) if item not in (None, "") else ""
+
+
+def evidence_values(item: object) -> list[str]:
+    if not isinstance(item, dict):
+        return []
+    value = item.get("evidence_refs", [])
+    if isinstance(value, list):
+        return [str(item) for item in value if item]
+    return [str(value)] if value else []
+
+
+def bullet_lines(values: list[str]) -> list[str]:
+    items = [f"- {value}" for value in values if value]
+    return items or ["- 无"]
+
+
+def finding_title_value(item: object) -> str:
+    return text_value(item, "title", "name", "finding")
+
+
+def agent_role(data: dict[str, object]) -> str:
+    return text_value(data.get("agent") or data.get("agent_role") or "agent", "agent")
+
+
+def output_targets(data: dict[str, object]) -> list[object]:
+    return [*list_value(data, "tested_targets"), *list_value(data, "discovered_targets")]
+
+
+def existing_finding_titles(project: Path) -> set[str]:
+    titles: set[str] = set()
+    for finding in (project / "findings").glob("*.md"):
+        title = heading_title(read_text(finding), "# 漏洞记录：")
+        if title:
+            titles.add(title.lower())
+    return titles
+
+
+def cmd_merge(args: argparse.Namespace) -> int:
+    root = workspace_root()
+    project = ensure_project(root, args.project)
+    data = load_agent_output(root, project, args.output)
+    agent = agent_role(data)
+    merged_targets = 0
+    merged_tests = 0
+    merged_blocked = 0
+    merged_findings = 0
+
+    inventory_path = project / "inventory.md"
+    inventory = read_text(inventory_path)
+    for target in output_targets(data):
+        url = text_value(target, "url", "target", "endpoint")
+        if not url or url in inventory:
+            continue
+        method = text_value(target, "method") or "GET"
+        auth = text_value(target, "auth", "requires_auth") or "unknown"
+        notes = text_value(target, "notes", "reason") or f"merged_from={args.output}; agent={agent}"
+        row = f"|  | {table_cell(url)} | {table_cell(method)} | {table_cell(auth)} | {table_cell(notes)} |\n"
+        inventory = append_section_table_row(inventory, "## URL 列表", row)
+        merged_targets += 1
+    write_text(inventory_path, inventory)
+
+    progress_path = project / "progress.md"
+    progress = read_text(progress_path)
+    now = now_text()
+    timeline_result = (
+        f"targets={len(output_targets(data))}; potential={len(list_value(data, 'potential_findings'))}; "
+        f"confirmed={len(list_value(data, 'confirmed_findings'))}; blocked={len(list_value(data, 'blocked_or_skipped'))}"
+    )
+    progress = append_section_table_row(
+        progress,
+        "## 时间线",
+        f"| {table_cell(now)} | {table_cell(agent)} | merge agent output | {table_cell(timeline_result)} |\n",
+    )
+
+    for target in list_value(data, "tested_targets"):
+        url = text_value(target, "url", "target", "endpoint")
+        if not url:
+            continue
+        surface = text_value(target, "surface", "test_surface") or "agent-output"
+        method = text_value(target, "method") or "子代理测试"
+        result = text_value(target, "result", "status", "notes") or "已合并"
+        refs = ", ".join(evidence_values(target))
+        progress = append_section_table_row(
+            progress,
+            "## 已执行测试",
+            f"| {table_cell(url)} | {table_cell(surface)} | {table_cell(method)} | {table_cell(result)} | {table_cell(refs)} |\n",
+        )
+        merged_tests += 1
+
+    for blocked in list_value(data, "blocked_or_skipped"):
+        target = text_value(blocked, "target", "url", "endpoint")
+        reason = text_value(blocked, "reason", "notes")
+        reason_type = text_value(blocked, "reason_type") or "其他"
+        status = text_value(blocked, "status") or "skipped"
+        progress = append_section_table_row(
+            progress,
+            "## 跳过 / 阻塞项",
+            (
+                f"| {table_cell(target)} | agent-output | {table_cell(status)} | {table_cell(reason_type)} | "
+                f"{table_cell(reason)} | {table_cell(agent)} | 需主代理确认 |  |  |\n"
+            ),
+        )
+        merged_blocked += 1
+
+    for status, key in (("candidate", "potential_findings"), ("confirmed-by-agent", "confirmed_findings")):
+        for finding in list_value(data, key):
+            title = finding_title_value(finding)
+            if not title:
+                continue
+            refs = ", ".join(evidence_values(finding))
+            progress = append_section_table_row(
+                progress,
+                "## 候选漏洞",
+                f"|  | {table_cell(title)} | {status} | {table_cell(refs)} |\n",
+            )
+            merged_findings += 1
+    write_text(progress_path, progress)
+
+    print(
+        f"Merged agent output: targets={merged_targets}, tests={merged_tests}, "
+        f"blocked={merged_blocked}, findings={merged_findings}"
+    )
+    return 0
+
+
+def cmd_review_agent_output(args: argparse.Namespace) -> int:
+    root = workspace_root()
+    project = ensure_project(root, args.project)
+    data = load_agent_output(root, project, args.output)
+    existing_titles = existing_finding_titles(project)
+    all_findings = [*list_value(data, "potential_findings"), *list_value(data, "confirmed_findings")]
+
+    scope_risks = [text_value(item, "reason", "target", "url", "notes") for item in list_value(data, "scope_risk")]
+    insufficient = [
+        finding_title_value(item)
+        for item in all_findings
+        if finding_title_value(item) and not evidence_values(item)
+    ]
+    seen: set[str] = set()
+    duplicates: list[str] = []
+    for item in all_findings:
+        title = finding_title_value(item)
+        if not title:
+            continue
+        key = title.lower()
+        if key in seen or key in existing_titles:
+            duplicates.append(title)
+        seen.add(key)
+    candidates = [finding_title_value(item) for item in list_value(data, "potential_findings") if finding_title_value(item)]
+
+    lines = [
+        "# 子代理输出审查",
+        "",
+        "## 越界风险",
+        "",
+        *bullet_lines(scope_risks),
+        "",
+        "## 证据不足",
+        "",
+        *bullet_lines(insufficient),
+        "",
+        "## 重复项",
+        "",
+        *bullet_lines(duplicates),
+        "",
+        "## 候选 Finding",
+        "",
+        *bullet_lines(candidates),
+    ]
+    print("\n".join(lines))
+    return 0
+
+
 def heading_title(text: str, prefix: str) -> str:
     for line in text.splitlines():
         if line.startswith(prefix):
@@ -890,6 +1102,16 @@ def build_parser() -> argparse.ArgumentParser:
     static_js_parser.add_argument("--save", action="store_true", help="save summary to project or run outputs")
     static_js_parser.add_argument("--max-items", type=int, default=30)
     static_js_parser.set_defaults(func=cmd_static_js)
+
+    merge_parser = subparsers.add_parser("merge", help="merge structured sub-agent output into project records")
+    merge_parser.add_argument("project")
+    merge_parser.add_argument("output", help="JSON file or Markdown file with fenced JSON")
+    merge_parser.set_defaults(func=cmd_merge)
+
+    review_agent_parser = subparsers.add_parser("review-agent-output", help="review structured sub-agent output")
+    review_agent_parser.add_argument("project")
+    review_agent_parser.add_argument("output", help="JSON file or Markdown file with fenced JSON")
+    review_agent_parser.set_defaults(func=cmd_review_agent_output)
 
     report_parser = subparsers.add_parser("report", help="generate report draft")
     report_parser.add_argument("project")

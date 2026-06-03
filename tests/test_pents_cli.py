@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 import subprocess
 import unittest
@@ -41,6 +42,8 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("new", result.stdout)
         self.assertIn("run", result.stdout)
         self.assertIn("static-js", result.stdout)
+        self.assertIn("merge", result.stdout)
+        self.assertIn("review-agent-output", result.stdout)
         self.assertIn("doctor-recon", result.stdout)
 
     def test_new_copies_project_templates(self) -> None:
@@ -187,6 +190,70 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("| Medium | 1 |", report)
         self.assertIn("## 证据与缺口", report)
         self.assertIn("| F-0002 | candidate | 缺失 | 缺少证据；缺少复现步骤 |", report)
+
+    def test_merge_and_review_agent_output(self) -> None:
+        self.run_cli("new", "cli-test", "--target", "https://example.test")
+        self.run_cli("finding", "cli-test", "Existing IDOR", "--id", "F-0001", "--severity", "Medium")
+        output = self.project / "agent-output.json"
+        output.write_text(
+            json.dumps(
+                {
+                    "agent_role": "api-agent",
+                    "tested_targets": [
+                        {
+                            "url": "https://example.test/api/v1/users/1",
+                            "method": "GET",
+                            "surface": "API",
+                            "result": "checked authz",
+                            "evidence_refs": ["E-0002"],
+                        }
+                    ],
+                    "potential_findings": [
+                        {
+                            "title": "Existing IDOR",
+                            "reason": "same object authorization issue",
+                            "evidence_refs": [],
+                        }
+                    ],
+                    "confirmed_findings": [
+                        {
+                            "title": "Unauthenticated setup",
+                            "severity": "High",
+                            "evidence_refs": ["E-0003"],
+                        }
+                    ],
+                    "blocked_or_skipped": [
+                        {
+                            "target": "/admin",
+                            "reason": "missing admin account",
+                            "reason_type": "等待账号",
+                            "status": "blocker",
+                        }
+                    ],
+                    "scope_risk": [{"target": "https://evil.test", "reason": "outside scope"}],
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        merge = self.run_cli("merge", "cli-test", "agent-output.json")
+        self.assertIn("Merged agent output", merge.stdout)
+        inventory = self.read_project("inventory.md")
+        self.assertIn("https://example.test/api/v1/users/1", inventory)
+        progress = self.read_project("progress.md")
+        self.assertIn("merge agent output", progress)
+        self.assertIn("Existing IDOR", progress)
+        self.assertIn("Unauthenticated setup", progress)
+        self.assertIn("missing admin account", progress)
+
+        review = self.run_cli("review-agent-output", "cli-test", "agent-output.json")
+        self.assertIn("越界风险", review.stdout)
+        self.assertIn("outside scope", review.stdout)
+        self.assertIn("证据不足", review.stdout)
+        self.assertIn("Existing IDOR", review.stdout)
+        self.assertIn("重复项", review.stdout)
+        self.assertIn("候选 Finding", review.stdout)
 
     def test_run_new_creates_numbered_run_templates(self) -> None:
         self.run_cli("new", "cli-test", "--target", "https://example.test")

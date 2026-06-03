@@ -80,26 +80,50 @@
 - 输出格式。
 - 证据要求。
 
-子代理输出必须结构化：
+子代理输出必须结构化。当前 `pents merge` 和 `pents review-agent-output` 支持 JSON 文件，或 Markdown 文档中的 fenced JSON：
 
-```yaml
-tested_targets:
-  - ""
-potential_findings:
-  - title: ""
-    reason: ""
-    evidence_refs: []
-confirmed_findings:
-  - title: ""
-    severity: ""
-    evidence_refs: []
-blocked_or_skipped:
-  - target: ""
-    reason: ""
-recommended_next:
-  - ""
-scope_risk:
-  - ""
+```json
+{
+  "agent_role": "api-agent",
+  "tested_targets": [
+    {
+      "url": "",
+      "method": "GET",
+      "surface": "API",
+      "result": "",
+      "evidence_refs": []
+    }
+  ],
+  "potential_findings": [
+    {
+      "title": "",
+      "reason": "",
+      "evidence_refs": []
+    }
+  ],
+  "confirmed_findings": [
+    {
+      "title": "",
+      "severity": "",
+      "evidence_refs": []
+    }
+  ],
+  "blocked_or_skipped": [
+    {
+      "target": "",
+      "reason": "",
+      "reason_type": "其他",
+      "status": "skipped"
+    }
+  ],
+  "recommended_next": [""],
+  "scope_risk": [
+    {
+      "target": "",
+      "reason": ""
+    }
+  ]
+}
 ```
 
 ## 推荐流程
@@ -108,10 +132,10 @@ scope_risk:
 2. 主代理执行 `pents inventory`，整理目标和测试面。
 3. 主代理执行 `pents brief --agent recon`，启动 Recon Agent。
 4. Recon Agent 输出资产、URL、API、参数和认证入口。
-5. 主代理执行 `pents merge`，合并 recon 输出。
+5. 主代理执行 `pents merge <project> <agent-output.json>`，合并 recon 输出到 inventory/progress。
 6. 主代理按测试面生成 Web/API/Auth 子任务。
 7. 子代理并行测试，输出候选 finding 和证据引用。
-8. 主代理执行 `pents review-agent-output`，检查越界、重复和证据缺口。
+8. 主代理执行 `pents review-agent-output <project> <agent-output.json>`，检查越界、重复和证据缺口。
 9. 主代理确认漏洞后执行 `pents finding` 创建正式记录。
 10. 主代理执行 `pents report` 生成报告草稿。
 11. 主代理执行 `pents review`，沉淀 skill 改进建议。
@@ -124,4 +148,3 @@ scope_risk:
 - 子代理不能扩大授权范围。
 - 子代理不能直接写正式 finding，除非后续明确改变规则。
 - 高风险动作必须由主代理和用户确认。
-
