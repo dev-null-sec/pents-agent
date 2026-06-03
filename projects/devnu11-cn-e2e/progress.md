@@ -3,8 +3,8 @@
 ## 概要
 
 - 项目名称：devnu11-cn-e2e
-- 当前阶段：静态分析完成，待主动探测
-- 更新时间：2026-06-02
+- 当前阶段：静态分析、被动 recon、主动 DNS 枚举完成；待 HTTP/端口/API 授权
+- 更新时间：2026-06-03
 
 ## 时间线
 
@@ -17,12 +17,15 @@
 | 2026-06-02 | Codex | 补齐主动验证前置条件记录 | 已在 scope.md 明确实际访问 URL、授权窗口、允许请求速率、测试账号和管理员账号均需在主动探测前确认；Codex 未对目标执行探测 |
 | 2026-06-02 | Codex | 补强 recon 基本盘交接材料 | 已新增 Claude 低频 recon 任务卡，并在 inventory/evidence 中补充子域名、端口、CDN、源站线索和服务指纹记录模板；Codex 未对目标执行探测 |
 | 2026-06-02 | Claude Code | 低频 recon 被动部分 | 5 个被动来源复查（crt.sh/urlscan/Wayback/OTX/Google）全部无结果；识别软件为 Sub2API；发现 Cloudflare Turnstile 线索；更新 inventory/evidence/progress/review |
+| 2026-06-03 | Codex | 主动 DNS 子域名枚举 | 按用户本轮授权执行 dnsx 主字典扫描；第一次 0 命中确认为 `-wd` 参数误用，修正后 167377 词条约 99 秒跑完，命中 5 个 DNS 名称 |
 
 ## 资产变更
 
 - 已记录授权目标：`*.devnu11.cn`
 - 通过 JS 静态分析识别：AI API 代理/中转平台（Vue 3.5.26 SPA）
 - 识别 40+ 前端路由、100+ API 端点、7 个 OAuth 集成、3 个支付集成
+- 主动 DNS 枚举命中 5 个名称：`ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`
+- 其中 `ai/blog/lk/st` 有 Cloudflare A/AAAA 记录；`online` 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选
 
 ## 已执行测试
 
@@ -33,14 +36,17 @@
 | `*.devnu11.cn` | JS 静态分析 | grep 正则提取（交互式会话） | 完成分析，提取路由/API/参数/OAuth/支付信息 | E-0004 |
 | `*.devnu11.cn` | 被动 DNS | crt.sh 证书透明查询 | 无证书透明记录返回 | E-0005 |
 | `*.devnu11.cn` | 正式 skill 验证 | 调用 3 个 recon skill | 全部有效，细节见 review.md | — |
+| `*.devnu11.cn` | 主动 DNS 子域名枚举 | dnsx + `dicts/curated/subdomains-main.txt` | 完整扫描 167377 词条，约 99.363 秒，命中 `ai/blog/lk/online/st` | E-0009 |
+| `ai/blog/lk/online/st.devnu11.cn` | DNS 记录复核 | dnsx A/AAAA/CNAME 查询 | `ai/blog/lk/st` 有 Cloudflare A/AAAA；`online` 为 NODATA 候选 | E-0010 |
 
 ## 待执行 Recon 检查
 
 | 目标 | 测试面 | 前置条件 | 执行主体 | 状态 | 记录要求 |
 | --- | --- | --- | --- | --- | --- |
 | `*.devnu11.cn` | 被动子域名发现 | 被动来源复查 | Claude Code | ✅ done | 5 来源均无结果，记录于 inventory 和 E-0007/E-0008 |
+| `*.devnu11.cn` | 主动 DNS 子域名枚举 | 用户本轮授权 DNS 参数由 Codex 决定 | Codex | ✅ done | 主字典命中 5 条，记录于 E-0009/E-0010/R001 |
 | `*.devnu11.cn` | 软件识别 | JS 静态分析 + WebSearch | Claude Code | ✅ done | 确认 Sub2API 开源平台，记录于 A-0004, E-0007 |
-| 待确认入口 URL | DNS / CDN 判断 | 需要具体 URL 或候选子域名 | Claude Code | ⛔ blocker | 所有被动来源无子域名，需用户提供实际 URL |
+| 候选子域名 | HTTP / CDN 判断 | 需要 HTTP 授权窗口和请求速率 | Claude Code | ⛔ blocker | 已有候选 DNS 名称，但本轮未授权 HTTP 探测 |
 | 待确认入口 URL | 端口确认 | 需要 URL、授权窗口、允许速率 | Claude Code | ⛔ blocker | scope.md 前置条件未满足 |
 | 待确认入口 URL | 服务指纹 | 需要 URL、授权窗口、允许速率 | Claude Code | ⛔ blocker | scope.md 前置条件未满足 |
 | 源站线索 | 源站挖掘 | 只做被动线索；直连 IP 需用户单独授权 | Claude Code | ✅ 被动完成 | 记录 Cloudflare/Su2API 源站线索，见 inventory |
@@ -51,7 +57,7 @@
 
 | 目标 | 测试面 | 状态 | 原因类型 | 具体原因 | 已尝试来源 / 替代动作 | 影响 | 建议安装工具 | 需要用户补充 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `*.devnu11.cn` | 主动 DNS 子域名枚举 | blocker | 授权缺失 / 工具缺失 | 尚未确认授权窗口、DNS 并发/速率和 resolver；Codex 本机 `pents doctor-recon` 显示 recon 工具链缺失，Claude 执行环境仍需自检 | 已完成 crt.sh、urlscan、Wayback、OTX、Google 被动来源；已同步 `dicts/curated/subdomains-main.txt` | 无法验证 fuzzDicts 主字典能否发现新子域名 | subfinder、dnsx、shuffledns、massdns | 授权窗口、允许 DNS 并发/速率、resolver 来源 |
+| 候选子域名 | HTTP 存活 / CDN / 服务指纹 | blocker | 授权缺失 | 已发现 `ai/blog/lk/st` 有 Cloudflare A/AAAA，但本轮授权只覆盖 DNS 枚举 | 已完成主动 DNS 和 DNS 记录复核 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 是否允许对候选子域名做低频 HTTP 探测；HTTP 请求速率和窗口 |
 | 待确认入口 URL | HTTP 存活 / CDN / 服务指纹 | blocker | 目标无输入 / 授权缺失 | 尚未提供实际访问 URL，HTTP 低频速率也未确认 | 已完成 JS 静态分析、软件识别和被动来源复查 | 无法确认真实入口、响应头、证书、跳转链和 CDN/WAF 判断 | httpx | 至少 1 个实际 URL、授权窗口、HTTP 请求速率 |
 | 待确认入口 URL | 小范围端口确认 | blocker | 目标无输入 / 风险过高 | 尚未提供实际入口和端口范围，不能凭通配域名扫描 | 已记录端口确认清单和禁止全端口扫描边界 | 无法确认 80/443/8080/8443 等入口暴露情况 | 视 Claude 执行环境确认 | 实际 URL 或授权 IP、授权窗口、端口范围、允许速率 |
 | 待确认入口 URL | API / 认证后测试 | blocker | 目标无输入 / 等待账号 | 尚未提供实际 URL、普通测试账号和管理员账号授权 | 已从 JS 提取 100+ API 端点和敏感管理功能 | 无法验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 无 | 实际 URL、测试账号、管理员账号授权或注册许可 |
@@ -75,9 +81,8 @@
 ## 待确认问题
 
 - ~~Claude Code 执行前确认授权窗口和允许的请求速率。~~ → 静态分析阶段无需确认
-- 主动探测前仍需确认授权窗口和允许请求速率。
-- 需要用户提供至少 1 个实际访问 URL，不能仅凭 `*.devnu11.cn` 通配范围猜测入口。
+- HTTP、端口、路径/API 和漏洞验证前仍需确认授权窗口和允许请求速率。
+- 是否允许把 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 作为下一轮低频 HTTP 候选入口。
 - 如需认证测试，需由用户提供测试账号并明确账号权限。
-- 需要目标实际访问 URL 才能进入主动探测阶段。
-- Claude Code 已按 `briefs/claude-low-frequency-recon.md` 执行低频 recon 的被动部分；主动 DNS/CDN、端口和服务指纹仍需实际 URL、授权窗口和速率。
+- Claude Code 已按 `briefs/claude-low-frequency-recon.md` 执行低频 recon 的被动部分；Codex 已完成主动 DNS 枚举；HTTP/CDN、端口和服务指纹仍需 HTTP 授权窗口和速率。
 - 数周后复查 crt.sh 证书透明日志。

@@ -3,8 +3,8 @@
 ## 元数据
 
 - 项目：devnu11-cn-e2e
-- 更新时间：2026-06-02
-- 分析来源：前端 JS 静态分析（js_files/），被动子域名枚举（5 个来源全部无结果），低频 recon 补强已执行被动部分（2026-06-02）
+- 更新时间：2026-06-03
+- 分析来源：前端 JS 静态分析（js_files/），被动子域名枚举（5 个来源全部无结果），主动 DNS 主字典枚举（2026-06-03）
 
 ## 资产
 
@@ -12,16 +12,21 @@
 | --- | --- | --- | --- | --- |
 | A-0001 | web/api | `*.devnu11.cn` | in-scope | 用户声明自有域名和服务器，允许授权测试 |
 | A-0002 | web/app | AI API 代理/中转平台（SPA） | identified | 前端 SPA，Vue 3.5.26 + Axios + Vue i18n |
-| A-0003 | dns | `*.devnu11.cn` | no-passive-results | 5 个被动来源复查全部无结果（见 E-0007），可能使用 Cloudflare 泛解析 + 通配符证书 |
+| A-0003 | dns | `*.devnu11.cn` | active-dns-results | 5 个被动来源复查全部无结果；主动主字典枚举命中 5 条（见 E-0009/E-0010） |
 | A-0004 | software | Sub2API（开源 AI API 代理平台） | identified | GitHub: Wei-Shaw/sub2api；Go + Vue 3 + PostgreSQL + Redis；demo.sub2api.org |
 | A-0005 | cdn/waf | Cloudflare（推测） | clue | 前端 JS 含 Cloudflare Turnstile 集成；被动来源无结果可能因 Cloudflare 泛解析遮挡 |
+| A-0006 | dns | `ai.devnu11.cn` | resolved | A/AAAA 指向 Cloudflare IP：104.21.52.13、172.67.193.236、2606:4700:3030::ac43:c1ec、2606:4700:3036::6815:340d |
+| A-0007 | dns | `blog.devnu11.cn` | resolved | A/AAAA 指向 Cloudflare IP：104.21.52.13、172.67.193.236、2606:4700:3030::ac43:c1ec、2606:4700:3036::6815:340d |
+| A-0008 | dns | `lk.devnu11.cn` | resolved | A/AAAA 指向 Cloudflare IP：104.21.52.13、172.67.193.236、2606:4700:3030::ac43:c1ec、2606:4700:3036::6815:340d |
+| A-0009 | dns | `st.devnu11.cn` | resolved | A/AAAA 指向 Cloudflare IP：104.21.52.13、172.67.193.236、2606:4700:3030::ac43:c1ec、2606:4700:3036::6815:340d |
+| A-0010 | dns | `online.devnu11.cn` | nodata-candidate | NOERROR 但无 A/AAAA，暂不作为 Web 入口 |
 
 ## Recon 基本盘补强清单
 
 | 检查项 | 当前状态 | 下一步 | 记录位置 |
 | --- | --- | --- | --- |
-| 子域名发现 | ✅ 被动部分完成，5 来源无结果 | 需要用户提供实际 URL 才能进入主动 DNS 爆破 | E-0007 |
-| DNS 解析 | ⛔ blocker：需实际 URL | 确认 URL 后解析 A/AAAA/CNAME 并判断 CDN | 本文件”DNS / CDN 记录模板” |
+| 子域名发现 | ✅ 被动与主动 DNS 均完成 | 后续根据 HTTP 授权对候选入口做低频存活确认 | E-0007, E-0008, E-0009 |
+| DNS 解析 | ✅ 候选子域名已复核 | `ai/blog/lk/st` 有 Cloudflare A/AAAA；`online` 为 NODATA 候选 | E-0010 |
 | 端口确认 | ⛔ blocker：需 URL+窗口+速率 | 确认后只做 80/443/8080/8443 | 本文件”端口与服务指纹记录模板” |
 | CDN/WAF 判断 | ✅ 被动部分完成 | 已发现 Cloudflare Turnstile 线索；DNS 解析后可确认 | A-0005, E-0004 |
 | 源站线索 | ✅ 被动部分完成 | Sub2API 开源项目 GitHub/GitHub Pages 属于第三方，不探测 | 本文件”源站线索记录模板” |
@@ -37,13 +42,28 @@
 | AlienVault OTX | 被动 DNS / 威胁情报 | 2026-06-02 | 需认证 | 匿名访问受限 |
 | Google 搜索 | 搜索引擎收录 | 2026-06-02 | 空 | `site:devnu11.cn` 无结果 |
 
-> 结论：所有被动来源均无子域名记录。可能原因：Cloudflare 泛解析 + 通配符证书 + 域名未公开索引。不执行大字典主动爆破。
+> 结论：所有被动来源均无子域名记录，但主动主字典枚举已命中 5 个 DNS 名称。被动全空不能作为“不存在子域名”的判断依据。
+
+### 子域名发现 — 主动字典枚举
+
+| 来源 | 类型 | 采集时间 | 结果 | 备注 |
+| --- | --- | --- | --- | --- |
+| dnsx + `dicts/curated/subdomains-main.txt` | 主动 DNS 字典枚举 | 2026-06-03 | 命中 5 条 | 字典 167377 词条，约 99.363 秒；E-0009 |
+
+| 子域名 | DNS 状态 | A/AAAA | 初步判断 | 证据 |
+| --- | --- | --- | --- | --- |
+| `ai.devnu11.cn` | NOERROR | 有 | Cloudflare 代理入口候选 | E-0010 |
+| `blog.devnu11.cn` | NOERROR | 有 | Cloudflare 代理入口候选 | E-0010 |
+| `lk.devnu11.cn` | NOERROR | 有 | Cloudflare 代理入口候选 | E-0010 |
+| `st.devnu11.cn` | NOERROR | 有 | Cloudflare 代理入口候选 | E-0010 |
+| `online.devnu11.cn` | NOERROR | 无 | NODATA 候选，暂不作为 Web 入口 | E-0010 |
 
 ### DNS / CDN 线索记录
 
 | 线索 | 来源 | 可信度 | 判断 | 备注 |
 | --- | --- | --- | --- | --- |
 | Cloudflare Turnstile 集成 | index.js `turnstile_site_key` | 较可能 | 站点可能使用 Cloudflare 代理 | 需 DNS CNAME 解析确认 |
+| 多个候选子域名指向 Cloudflare IP | E-0010 | 确认 | `ai/blog/lk/st` A/AAAA 指向 104.21.52.13、172.67.193.236 及对应 IPv6 | 还需 HTTP 响应头/证书确认具体入口 |
 
 ### 源站线索记录
 
@@ -243,7 +263,7 @@
 
 | 编号 | 测试面 | 负责代理 | 状态 | 备注 |
 | --- | --- | --- | --- | --- |
-| S-0001 | recon | Claude Code | done | 被动子域名枚举（无结果）+ JS 静态分析完成 |
+| S-0001 | recon | Claude Code / Codex | done | JS 静态分析、被动子域名枚举、主动 DNS 主字典枚举完成；HTTP/端口/API 待授权 |
 | S-0002 | web | Claude Code | pending | 需存活入口 URL 才能进行手工验证 |
 | S-0003 | api | Claude Code | pending | 需存活入口 + 测试账号才能进行授权测试 |
 | S-0004 | auth | Claude Code | pending | OAuth 配置缺陷检查，需测试账号 |

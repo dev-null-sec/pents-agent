@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 39,
+  "next_id": 41,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T07:20:52+00:00",
+  "updated_at": "2026-06-03T08:00:59+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T07:20:41+00:00",
+      "updated_at": "2026-06-03T08:00:50+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T07:20:41+00:00"
+      "released_at": "2026-06-03T08:00:50+00:00"
     }
   ],
   "tasks": [
@@ -126,31 +126,48 @@
       "lease_expires_at": ""
     },
     {
-      "id": "T-0038",
-      "title": "由 Claude Code 执行 devnu11 主动 DNS 子域名枚举",
+      "id": "T-0039",
+      "title": "实现 pents active-dns 主动 DNS 预检与执行封装",
       "description": "",
-      "priority": "P0",
+      "priority": "P1",
       "status": "inbox",
-      "lane": "实战验证",
-      "source": "user",
+      "lane": "默认",
+      "source": "",
       "owner_agent": "",
       "scope": [],
-      "verify_scope": [
-        "dicts",
-        "docs",
-        "projects"
-      ],
+      "verify_scope": [],
       "depends_on": [],
       "acceptance": [
-        "确认 DNS 授权窗口、DNS 并发/速率、resolver 和停止条件",
-        "Claude Code 使用 dicts/curated/subdomains-main.txt 对 devnu11.cn 授权子域范围执行受控主动 DNS 枚举",
-        "结果回填 projects/devnu11-cn-e2e/inventory.md、evidence.md、progress.md、review.md，并记录字典、resolver、速率和泛解析去噪情况"
+        "输入 domain/dict/resolvers 后自动执行 canary 子域校验、随机 NXDOMAIN 泛解析检查、resolver 自检、完整字典枚举、A/AAAA/CNAME 复核、证据登记和报告摘要；明确禁止将 dnsx -wd 当作常规枚举参数；覆盖 R001 暴露的 0 命中误判场景"
       ],
       "verification": "",
       "deferred_verification": "",
       "leftovers": "",
-      "created_at": "2026-06-03T07:20:19+00:00",
-      "updated_at": "2026-06-03T07:20:19+00:00",
+      "created_at": "2026-06-03T07:59:46+00:00",
+      "updated_at": "2026-06-03T07:59:46+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0040",
+      "title": "升级 subdomain-enumeration skill 主动 DNS 检查表",
+      "description": "",
+      "priority": "P1",
+      "status": "inbox",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "skill 明确区分被动来源、主动 DNS、HTTP 探测三阶段；主动 DNS 前要求 canary、resolver 健康检查、随机 NXDOMAIN 泛解析检查；说明 dnsx -wd 风险；输出 NOERROR/NODATA/A/AAAA/CNAME 分类和工具缺失建议"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-03T08:00:04+00:00",
+      "updated_at": "2026-06-03T08:00:04+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -1441,6 +1458,43 @@
       "started_at": "2026-06-03T07:18:32+00:00",
       "completed_at": "2026-06-03T07:20:41+00:00",
       "archived_at": "2026-06-03T07:20:52+00:00"
+    },
+    {
+      "id": "T-0038",
+      "title": "由 Claude Code 执行 devnu11 主动 DNS 子域名枚举",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "实战验证",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "dicts",
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e"
+      ],
+      "verify_scope": [
+        "dicts",
+        "docs",
+        "projects"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "确认 DNS 授权窗口、DNS 并发/速率、resolver 和停止条件",
+        "Claude Code 使用 dicts/curated/subdomains-main.txt 对 devnu11.cn 授权子域范围执行受控主动 DNS 枚举",
+        "结果回填 projects/devnu11-cn-e2e/inventory.md、evidence.md、progress.md、review.md，并记录字典、resolver、速率和泛解析去噪情况"
+      ],
+      "verification": "已复核扫描链路：ai.devnu11.cn 可解析；确认此前 0 命中系 dnsx -wd 误用。已重跑 dicts/curated/subdomains-main.txt 全量 167377 词条，threads=2000 retry=2 timeout=2s，约 99.363 秒完成，命中 5 条；raw 主扫描 5 行、记录复核 5 行；E-0009/E-0010 已登记；progress/inventory/evidence/report/review/scope/docs 当前状态已同步；T-0039/T-0040 已入池。",
+      "deferred_verification": "",
+      "leftovers": "HTTP 存活、CDN 响应头、端口确认、路径/API 和 F-0001 漏洞验证仍需用户确认候选入口、HTTP 请求速率、授权窗口和账号状态。",
+      "created_at": "2026-06-03T07:20:19+00:00",
+      "updated_at": "2026-06-03T08:00:59+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T07:35:36+00:00",
+      "started_at": "2026-06-03T07:35:36+00:00",
+      "completed_at": "2026-06-03T08:00:50+00:00",
+      "archived_at": "2026-06-03T08:00:59+00:00"
     }
   ]
 }

@@ -73,28 +73,50 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 | 软件识别 | 确认 Sub2API 开源平台 | 为后续攻击面分析提供关键上下文 |
 | 源站线索 | Sub2API GitHub + Cloudflare 推断 | 不探测第三方资产 |
 
-**关键结论**：在 Cloudflare 泛解析场景下，被动子域名枚举天然受限。scope.md 的前置条件（实际 URL、授权窗口、速率）必须在主动阶段开始前补齐。本阶段被动工作已穷尽，继续追加被动来源不会产生新价值。
+**关键结论**：被动子域名枚举天然受限。2026-06-03 主动 DNS 枚举证明，被动全空不能推出“无子域名”；后续应把被动来源、主动 DNS、HTTP 授权验证分成三个清晰阶段。
 
 **被动 Recon 与 skill 的契合度**：
-- `subdomain-enumeration` skill 设计了被动（crt.sh）+ 主动（DNS 爆破）两阶段，本场景下被动阶段无输出，主动阶段被 scope 阻止，导致 skill 无法完整覆盖。建议增加"被动无结果时的诊断 checklist"和"Cloudflare 场景下的替代思路"（如 CSP/CORS 头挖掘、搜索引擎缓存、第三方网站外链引用等）。
+- `subdomain-enumeration` skill 设计了被动（crt.sh）+ 主动（DNS 爆破）两阶段。本场景下被动阶段无输出，但主动 DNS 经用户授权后命中 5 条，说明 skill 需要更明确地指导“何时应主动扫、如何预检链路、如何分类 NOERROR/NODATA”。
 - `javascript-analysis` skill 在本轮中额外产生了 CDN 线索和软件识别价值，说明 JS 分析在 recon 基本盘中的作用被低估，建议升格为 recon 阶段的默认检查项而非可选项。
+
+### 主动 DNS 执行复盘（2026-06-03）
+
+用户明确授权 `*.devnu11.cn` 主动 DNS 子域名枚举，并要求完整字典 5 分钟内完成。Codex 按本轮授权执行：
+
+| 检查项 | 执行结果 | 评价 |
+| --- | --- | --- |
+| 主字典完整枚举 | `dicts/curated/subdomains-main.txt` 167377 词条，约 99.363 秒完成 | 满足性能要求 |
+| 命中结果 | `ai/blog/lk/online/st` 5 条 | 被动来源全空但主动 DNS 有结果，证明主动扫描必要 |
+| 记录复核 | `ai/blog/lk/st` 有 Cloudflare A/AAAA，`online` 无 A/AAAA | 区分可解析候选和 NODATA，避免误报 |
+| 泛解析噪声 | 5 个随机子域为 NXDOMAIN | 未发现 wildcard 噪声 |
+
+**关键问题**：第一次扫描得到 0 命中，是因为 dnsx `-wd` 参数误用。该参数会进入泛解析过滤模式，不应与主字典枚举混在一个命令中。用户用 `ai.` 线索及时指出异常，避免错误结论沉淀。
+
+**流程改进**：
+
+1. 主动 DNS 扫描前必须先跑 canary：已知子域、随机 NXDOMAIN、resolver 自检。
+2. 泛解析检测与字典枚举拆开执行，不把 `-wd` 作为常规枚举参数。
+3. 结果解析必须区分 A/AAAA/CNAME、NOERROR/NODATA、NXDOMAIN 和 wildcard 噪声。
+4. `pents active-dns` 值得入池：自动完成扫描、复核、证据登记和报告摘要。
 
 ### 本次执行
 
 1. **非交互执行的问题**：上一次非交互 Claude Code 执行中，进程长时间挂起未完成分析。交互式会话中通过 grep 等工具高效完成了静态分析。建议未来非交互任务增加超时和检查点机制。
 2. **JS 文件获取**：JS 文件已在非交互执行中下载，但下载来源 URL 未记录在 evidence 中。缺少来源信息降低了证据的可追溯性。
-3. **被动 vs 主动**：本次仅完成被动/静态阶段。要完成完整的端到端验证，需要获得 `*.devnu11.cn` 的实际访问 URL。
+3. **被动 vs 主动**：主动 DNS 已证明有价值；后续还需要单独授权 HTTP、端口和 API 验证，不能从 DNS 命中自动扩展测试范围。
 
 ### pents CLI
 
 1. **编码问题**：`pents scope` 输出在 PowerShell 终端中显示为乱码（GBK/UTF-8 编码不匹配）。
 2. **finding 模板**：`pents finding` 创建 finding 的流程未在本任务中使用（手动编写）。建议 CLI 支持交互式填充模板。
 3. **静态分析支持**：CLI 缺少对 JS 文件静态分析的自动化支持，可考虑增加自动化提取命令。
+4. **主动 DNS 封装**：CLI 缺少 `pents active-dns`，导致 dnsx 参数、canary、wildcard 检查、证据登记都要手工串联，容易出错。
 
 ### 流程
 
 1. **scope.md 解析**：当前流程假设主动探测可行，但 JS 文件必须先于主动探测获取。建议在 scope.md 中区分"已获文件的分析"和"主动探测"两个子阶段。
 2. **skill 联动**：javascript-analysis → api-discovery 的衔接在流程中自然发生，但 skill 间缺乏明确引用。建议在 skill 中增加"前置/后置 skill"的关系标注。
+3. **DNS 与 HTTP 授权分层**：`*.devnu11.cn` 可先授权 DNS 枚举；HTTP/端口/API 应继续要求 URL/候选入口、请求速率和授权窗口。
 
 ## 经验笔记
 
@@ -102,6 +124,8 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 - 对于 AI API 代理平台，管理后台是最大的攻击面——即使认证正确，IDOR/BFLA 风险仍然很高。
 - 安装向导类端点（setup wizard）是静态分析中最容易发现的"高价值"漏洞候选。
 - `*.devnu11.cn` 的 crt.sh 无结果提示可能域名较新——建议在数周后复查 CT 日志。
+- 被动子域名来源全空不等于无资产；对授权通配范围应执行主动 DNS 字典枚举。
+- dnsx `-wd` 不能直接当作主动枚举参数使用；泛解析检测需要单独做。
 
 ## 跳过 / 阻塞复盘
 
@@ -109,8 +133,7 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 | 测试面 | 原因类型 | 已尝试来源 / 替代动作 | 未执行项 | 影响 | 建议安装工具 | 需要用户补充 | 后续跟进 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 主动 DNS 子域名枚举 | 授权缺失 / 工具缺失 | 5 个被动来源均已复查；已同步 `dicts/curated/subdomains-main.txt`；Codex 本机 `pents doctor-recon` 已确认 recon 工具缺失 | 未使用 fuzzDicts 主字典执行主动 DNS 枚举 | 无法评估主字典命中质量，也无法发现被动来源覆盖不到的子域名 | subfinder、dnsx、shuffledns、massdns | 授权窗口、DNS 并发/速率、resolver 来源；Claude 执行环境需先跑 `pents doctor-recon` | 补齐条件后交给 Claude Code 执行，并将命中/噪声回填到字典治理 |
-| HTTP 存活 / CDN / 服务指纹 | 目标无输入 / 授权缺失 | JS 静态分析已发现 Cloudflare Turnstile 和 Sub2API 线索 | 未对实际入口发起 HTTP 探测 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 至少 1 个实际访问 URL、授权窗口、HTTP 请求速率 | 补齐入口后按低频探测执行 |
+| HTTP 存活 / CDN / 服务指纹 | 授权缺失 | 主动 DNS 已命中 `ai/blog/lk/st` 且有 Cloudflare A/AAAA | 未对候选入口发起 HTTP 探测 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 是否允许对候选入口做低频 HTTP 探测；授权窗口、HTTP 请求速率 | 补齐 HTTP 条件后按低频探测执行 |
 | 小范围端口确认 | 目标无输入 / 风险过高 | 已列出常见 Web/API 端口确认范围 | 未确认 80/443/8080/8443 等端口 | 无法判断暴露端口和服务 banner | 视 Claude 执行环境确认 | 实际 URL 或授权 IP、端口范围、允许速率 | 仅在授权范围和端口范围明确后执行 |
 | API / 认证后测试 | 目标无输入 / 等待账号 | 已从 JS 中提取 100+ API 端点和敏感管理功能 | 未验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 所有 finding 仍为待确认，无法确认实际风险 | 无 | 实际 URL、普通测试账号、管理员账号授权或注册许可 | 入口和账号齐备后启动 Web/API 子代理 |
 
@@ -118,18 +141,17 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 | 缺口 | 影响 | 如何填补 |
 | --- | --- | --- |
-| 主动 DNS 条件未确认 | 无法执行 subdomains-main 主字典枚举 | 确认授权窗口、DNS 并发/速率和 resolver |
-| 目标实际 URL 未知 | 无法验证任何发现 | 询问用户提供具体子域名 |
+| HTTP 探测条件未确认 | 无法验证候选子域名是否为真实 Web 入口 | 确认是否允许对 `ai/blog/lk/st` 做低频 HTTP 探测、请求速率和窗口 |
 | 测试账号未提供 | 无法测试认证后端点 | 用户注册或提供测试账号 |
 | JS 文件下载来源未记录 | 证据链不完整 | 记录下载时的 URL 和响应头 |
-| 未执行主动探测 | 所有 finding 均为待确认 | 获得 URL 后执行低频验证 |
+| 未执行 HTTP/端口/API 主动探测 | 所有 finding 均为待确认 | 获得 HTTP 授权后执行低频验证 |
 | 未测试 API 授权 | 管理后台 100+ 端点的权限未知 | 需管理员测试账号 |
 
 ## 后续步骤
 
-1. 向用户确认 `*.devnu11.cn` 的实际访问 URL
+1. 向用户确认是否允许对 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 做低频 HTTP 探测
 2. 获得测试账号或确认允许用户注册
-3. 在授权窗口内进行低频主动探测
+3. 在授权窗口内进行低频 HTTP/CDN/服务指纹主动探测
 4. 验证 F-0001（setup 端点是否存在）
 5. 对管理后台 API 进行 IDOR/BFLA 测试
 6. 对 OAuth 回调进行配置审查

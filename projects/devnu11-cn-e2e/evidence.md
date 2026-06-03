@@ -3,7 +3,7 @@
 ## 元数据
 
 - 项目：devnu11-cn-e2e
-- 更新时间：2026-06-02
+- 更新时间：2026-06-03
 
 ## 证据列表
 
@@ -17,6 +17,8 @@
 | E-0006 | recon-plan | `*.devnu11.cn` | — | briefs/claude-low-frequency-recon.md | 子域名、端口、CDN、源站线索和服务指纹的低频执行清单；Claude Code 已执行被动部分（2026-06-02） |
 | E-0007 | software-id | `*.devnu11.cn` | — | 本文件下方 | Sub2API 软件识别（2026-06-02）：确认目标为开源 AI API 代理平台，含技术栈和默认配置分析 |
 | E-0008 | passive-recon-sweep | `*.devnu11.cn` | — | 本文件下方 | 多来源被动侦察汇总（2026-06-02）：5 个被动来源全部无结果 |
+| E-0009 | active-dns | *.devnu11.cn |  | runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns.jsonl | 主动 DNS 子域名枚举命中 ai/blog/lk/online/st；上一次 0 命中为空结果系 dnsx -wd 误用导致未进入暴力枚举流程。; collected_at=2026-06-03 15:46:10; evidence_type=active-dns; source_url=dnsx://devnu11.cn; headers=tool=dnsx; dictionary=dicts/curated/subdomains-main.txt; dictionary_lines=167377; resolvers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,223.5.5.5,119.29.29.29; threads=2000; retry=2; timeout=2s; rcode=noerror; wildcard_check=5-random-labels-nxdomain; elapsed_seconds=99.363; hits=5; corrected_issue=removed-wd-filter-only-mode; file=runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns.jsonl; sha256=259f3b1a4224afa7b7f52192ec3b3a19520a8519b825c0e3aa6a5a8f66bee692; chain=complete |
+| E-0010 | dns-record-check | ai.devnu11.cn,blog.devnu11.cn,lk.devnu11.cn,online.devnu11.cn,st.devnu11.cn |  | runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns-record-check.jsonl | 对主动 DNS 命中的 5 个子域名补做 A/AAAA/CNAME 复核：ai、blog、lk、st 有 Cloudflare A/AAAA；online 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选。; collected_at=2026-06-03 15:47:35; evidence_type=dns-record-check; source_url=dnsx://record-check/devnu11.cn; headers=tool=dnsx; query=a,aaaa,cname; resolvers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,223.5.5.5,119.29.29.29; threads=100; retry=2; timeout=2s; hits_checked=5; a_aaaa_confirmed=4; nodata=online.devnu11.cn; file=runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns-record-check.jsonl; sha256=a5377ea315897660ef151c8197a7575c5d1731dc1facb16ec6b49b0c8d88aa3b; chain=complete |
 
 ## 证据 E-0004：前端 JS 静态分析
 
@@ -192,5 +194,54 @@
 ### 对后续侦察的影响
 
 - 被动子域名发现已经穷尽主流免费来源，不适合再追加。
-- 主动 DNS 爆破在当前条件（无实际 URL、无授权窗口、无速率确认）下被 scope 禁止。
-- 下一步必须由用户提供至少 1 个实际访问 URL（如 `https://xxx.devnu11.cn`），才能进入 DNS 解析、端口确认和服务指纹阶段。
+- 2026-06-03 用户进一步授权主动 DNS 子域名枚举，结果见 E-0009/E-0010。
+- 下一步必须确认是否允许对候选子域名执行低频 HTTP 探测，才能进入响应头、证书、跳转链、端口确认和服务指纹阶段。
+
+## 证据 E-0009：主动 DNS 主字典枚举
+
+### 执行摘要
+
+- 执行时间：2026-06-03
+- 工具：dnsx
+- 目标：`devnu11.cn`
+- 字典：`dicts/curated/subdomains-main.txt`
+- 字典规模：167377 词条
+- 参数：threads=2000，retry=2，timeout=2s，`rcode=noerror`
+- resolver：1.1.1.1、1.0.0.1、8.8.8.8、8.8.4.4、9.9.9.9、223.5.5.5、119.29.29.29
+- 耗时：约 99.363 秒
+- 输出文件：`runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns.jsonl`
+- SHA256：`259f3b1a4224afa7b7f52192ec3b3a19520a8519b825c0e3aa6a5a8f66bee692`
+
+### 链路修正
+
+第一次扫描输出 0 行，后续复核确认是 dnsx `-wd` 参数误用导致。`-wd` 会进入泛解析过滤模式，不应与主字典枚举混用。修正后去掉 `-wd`，先单独用随机子域确认 NXDOMAIN，再执行主字典枚举。
+
+### 命中列表
+
+| 子域名 | 状态 | 备注 |
+| --- | --- | --- |
+| `ai.devnu11.cn` | NOERROR | 主字典第 882 行 `ai` 命中 |
+| `blog.devnu11.cn` | NOERROR | 主字典命中 |
+| `lk.devnu11.cn` | NOERROR | 主字典命中 |
+| `online.devnu11.cn` | NOERROR | 无 A/AAAA，见 E-0010 |
+| `st.devnu11.cn` | NOERROR | 主字典命中 |
+
+## 证据 E-0010：DNS 命中记录复核
+
+### 执行摘要
+
+- 执行时间：2026-06-03
+- 工具：dnsx
+- 查询类型：A、AAAA、CNAME
+- 输出文件：`runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns-record-check.jsonl`
+- SHA256：`a5377ea315897660ef151c8197a7575c5d1731dc1facb16ec6b49b0c8d88aa3b`
+
+### 复核结果
+
+| 子域名 | A | AAAA | 判断 |
+| --- | --- | --- | --- |
+| `ai.devnu11.cn` | 104.21.52.13, 172.67.193.236 | 2606:4700:3030::ac43:c1ec, 2606:4700:3036::6815:340d | Cloudflare 代理入口候选 |
+| `blog.devnu11.cn` | 104.21.52.13, 172.67.193.236 | 2606:4700:3030::ac43:c1ec, 2606:4700:3036::6815:340d | Cloudflare 代理入口候选 |
+| `lk.devnu11.cn` | 104.21.52.13, 172.67.193.236 | 2606:4700:3030::ac43:c1ec, 2606:4700:3036::6815:340d | Cloudflare 代理入口候选 |
+| `st.devnu11.cn` | 104.21.52.13, 172.67.193.236 | 2606:4700:3030::ac43:c1ec, 2606:4700:3036::6815:340d | Cloudflare 代理入口候选 |
+| `online.devnu11.cn` | 无 | 无 | NOERROR/NODATA 候选，不作为 Web 入口 |
