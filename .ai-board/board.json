@@ -6,7 +6,7 @@
   },
   "next_id": 46,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-03T10:15:40+00:00",
+  "updated_at": "2026-06-03T10:22:53+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-03T10:15:30+00:00",
+      "updated_at": "2026-06-03T10:22:41+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-03T10:15:30+00:00"
+      "released_at": "2026-06-03T10:22:41+00:00"
     },
     {
       "id": "claude-code",
@@ -53,35 +53,6 @@
     }
   ],
   "tasks": [
-    {
-      "id": "T-0014",
-      "title": "创建 demo-project 示例流程",
-      "description": "",
-      "priority": "P2",
-      "status": "inbox",
-      "lane": "示例项目",
-      "source": "user",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [
-        "docs",
-        "projects",
-        "templates"
-      ],
-      "depends_on": [],
-      "acceptance": [
-        "examples 或 projects 下有一个可阅读的 demo 项目",
-        "demo 展示 scope、inventory、evidence、finding、report、review 的完整结构",
-        "demo 不包含真实敏感目标或越界测试内容"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-02T09:40:03+00:00",
-      "updated_at": "2026-06-02T09:40:03+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
     {
       "id": "T-0022",
       "title": "补齐实际入口并执行低频主动验证",
@@ -1677,6 +1648,41 @@
       "started_at": "2026-06-03T10:10:34+00:00",
       "completed_at": "2026-06-03T10:15:30+00:00",
       "archived_at": "2026-06-03T10:15:40+00:00"
+    },
+    {
+      "id": "T-0014",
+      "title": "创建 demo-project 示例流程",
+      "description": "",
+      "priority": "P2",
+      "status": "archived",
+      "lane": "示例项目",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "examples/demo-project"
+      ],
+      "verify_scope": [
+        "docs",
+        "projects",
+        "templates"
+      ],
+      "depends_on": [],
+      "acceptance": [
+        "examples 或 projects 下有一个可阅读的 demo 项目",
+        "demo 展示 scope、inventory、evidence、finding、report、review 的完整结构",
+        "demo 不包含真实敏感目标或越界测试内容"
+      ],
+      "verification": "已在 examples/demo-project 创建可阅读 demo：包含 README、scope、inventory、evidence、progress、findings/F-0001、report、review；包含 briefs/t-demo-recon.md 和 runs/R001-2026-06-03-demo-recon/ 下的 brief/progress/evidence/R001-report-delta/review/outputs。验证：Test-Path 检查 scope、inventory、evidence、finding、report、review、R001-report-delta 均存在；示例文件共 16 个；rg 检查未出现 devnu11 或 example.com，命中项仅为明确声明不包含真实凭据。",
+      "deferred_verification": "",
+      "leftovers": "docs/当前状态.md 仍由 T-0042 claude-code 锁定，本轮未更新。demo 使用 example.test 保留域名，不包含真实扫描输出。",
+      "created_at": "2026-06-02T09:40:03+00:00",
+      "updated_at": "2026-06-03T10:22:53+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-03T10:17:57+00:00",
+      "started_at": "2026-06-03T10:17:57+00:00",
+      "completed_at": "2026-06-03T10:22:41+00:00",
+      "archived_at": "2026-06-03T10:22:53+00:00"
     }
   ]
 }
