@@ -1,0 +1,14 @@
+[project]
+name = "pents"
+version = "0.1.0"
+description = "Claude Code pentest workflow helper"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+pents = "pents.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+

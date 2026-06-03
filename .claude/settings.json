@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config *)",
+      "Bash(git clone *)",
+      "Bash(go version *)",
+      "Bash(npm --version)",
+      "Bash(pnpm --version)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm run *)",
+      "Bash(go env *)",
+      "Bash(go mod *)",
+      "Bash(export GOPROXY=\"https://goproxy.cn,direct\")",
+      "Bash(mkdir -p build)",
+      "Bash(go build *)",
+      "Bash(mkdir -p refer)",
+      "Bash(cp -r xalgorix refer/xalgorix)",
+      "Bash(rm -rf xalgorix)",
+      "Bash(export PIP_PROXY=\"http://127.0.0.1:7890\")",
+      "Bash(pip install *)",
+      "Bash(echo \"EXIT: $?\")",
+      "PowerShell(& \"C:\\\\Users\\\\Administrator\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\python.exe\" --version 2>&1)",
+      "Bash(bash convert_skills.sh)",
+      "Bash(uv run *)",
+      "Bash(ai-board complete *)"
+    ]
+  }
+}

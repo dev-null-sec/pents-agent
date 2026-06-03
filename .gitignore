@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / frontend tooling
+node_modules/
+dist/
+build/
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Pentest raw outputs and bulky captures
+projects/*/raw/
+projects/*/outputs/
+projects/*/runs/*/raw/
+projects/*/runs/*/outputs/
+projects/**/*.har
+projects/**/*.pcap
+projects/**/*.pcapng
+projects/**/*.zip
+projects/**/*.7z
+projects/**/*.tar
+projects/**/*.gz
+
+# Local reference archives are kept outside versioned project assets.
+refer/*
+!refer/README.md
