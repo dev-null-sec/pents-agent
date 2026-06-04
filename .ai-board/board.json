@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 55,
+  "next_id": 56,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T06:35:43+00:00",
+  "updated_at": "2026-06-04T06:56:09+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T06:35:33+00:00",
+      "updated_at": "2026-06-04T06:55:57+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T06:35:33+00:00"
+      "released_at": "2026-06-04T06:55:57+00:00"
     },
     {
       "id": "claude-code",
@@ -1968,6 +1968,36 @@
       "started_at": "2026-06-04T06:31:28+00:00",
       "completed_at": "2026-06-04T06:35:33+00:00",
       "archived_at": "2026-06-04T06:35:43+00:00"
+    },
+    {
+      "id": "T-0055",
+      "title": "设计 pentest-intel-hub 独立情报模块",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "pentest-intel-hub"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "创建 pentest-intel-hub 独立子项目结构；明确它服务于当前 pentest 智能体但不直接执行攻击、不直接改正式 skill；包含信息源策略、知识评分规则、知识卡片模板、验证与晋升规则、exports 与主项目集成协议；当前只做结构和文档，不写爬虫、不联网采集。"
+      ],
+      "verification": "已创建 pentest-intel-hub 独立子项目结构，共 43 个文件；包含 README、项目定位、信息源策略、知识评分规则、入库晋升规则、与主项目集成协议、sources allow/block/tags、collectors 预留目录、inbox 分层、knowledge card 模板、validation 分层和 exports 输出目录。已同步 docs/当前状态.md。验证：Test-Path 确认 README、集成协议、knowledge-card 模板、allowlist、exports README 存在；rg 检查边界说明覆盖不直接执行攻击、不直接改正式 skill、未验证只做候选、不写爬虫、不联网采集；本轮未实现采集器、未联网、未执行任何渗透测试。",
+      "deferred_verification": "",
+      "leftovers": "后续可单独排期：实现 manual/RSS/GitHub 采集器、知识卡评分命令、exports 到主项目需求池的导入流程；当前模块仅为结构和规则。",
+      "created_at": "2026-06-04T06:49:54+00:00",
+      "updated_at": "2026-06-04T06:56:09+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T06:50:28+00:00",
+      "started_at": "2026-06-04T06:50:28+00:00",
+      "completed_at": "2026-06-04T06:55:57+00:00",
+      "archived_at": "2026-06-04T06:56:09+00:00"
     }
   ]
 }
