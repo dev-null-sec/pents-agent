@@ -23,6 +23,7 @@
 | [subdomain-enumeration](recon/subdomain-enumeration/SKILL.md) | 通过被动（证书透明）和主动（DNS 爆破）方式枚举目标子域名 | xalgorix |
 | [javascript-analysis](recon/javascript-analysis/SKILL.md) | 分析前端 JS 文件，提取 API 端点、密钥和隐藏路径 | xalgorix |
 | [api-discovery](recon/api-discovery/SKILL.md) | 发现目标 API（OpenAPI/Swagger、版本枚举、REST 资源、GraphQL） | xalgorix |
+| [browser-test-agent](recon/browser-test-agent/SKILL.md) | 使用 agent-browser 执行授权浏览器交互验证，并在需要时自动调用视觉子代理 | project |
 
 ### Web 漏洞（web）
 
@@ -55,8 +56,8 @@
 
 ### 统计
 
-- 总计：**22 个正式 skill**
-- 信息收集（recon）：3 个
+- 总计：**23 个正式 skill**
+- 信息收集（recon）：4 个
 - Web 漏洞（web）：14 个
 - API 安全（api）：5 个
 
