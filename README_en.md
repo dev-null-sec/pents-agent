@@ -134,6 +134,7 @@ v0.1, being validated end-to-end against `*.devnu11.cn`.
 - Sub-agent collaboration: structured sub-agent output → `pents merge` → `pents review-agent-output` (scope creep detection, evidence sufficiency check, dedup)
 - Retest isolation: `runs/R001`/`R002` each self-contained, only accumulated facts merge upward
 - First feedback loop in action: the `dnsx -wd` incident led to revised active DNS procedures and skill updates; thin passive source coverage drove skill improvements
+- **Intel distillation pipeline**: `pentest-intel-hub/` — a full pipeline from source grading → 7-dimension scoring → knowledge cards → validation → export suggestions into 5 output channels, ready for intel intake
 
 **Still rough:**
 
@@ -152,6 +153,7 @@ v0.1, being validated end-to-end against `*.devnu11.cn`.
 ├── dicts/            # Wordlist evolution pipeline
 │   ├── curated/      #   Default-ready: 167k subdomains, paths, params
 │   └── candidates/   #   Field discoveries → promoted after review
+├── pentest-intel-hub/ # Intel distillation — raw intel → scoring → knowledge cards → validation → export suggestions
 ├── tools/            # Custom scripts — reusable logic, kept out of the CLI
 ├── cli/              # pents CLI — the AI's mechanical hand, no intelligence of its own
 ├── docs/             # Project docs: direction, roadmap, kanban, decisions

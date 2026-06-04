@@ -132,6 +132,7 @@ v0.1，正在用 `*.devnu11.cn` 做端到端验证。
 - 子代理协作：结构化子代理输出 → `pents merge` 合并 → `pents review-agent-output` 审查越界和证据不足
 - 复测分层：`runs/R001`/`R002` 每轮独立，顶层只合并累计事实
 - 首个实战反馈闭环：`dnsx -wd` 踩坑后修订了主动 DNS 枚举流程和 skill；被动来源不足的发现推动了 skill 补充更多数据源
+- **情报蒸馏管线**：`pentest-intel-hub/` 已建立从信息源分级 → 7 维评分 → 知识卡片 → 验证 → export 候选建议的完整链路，5 类输出通道就绪，等待情报投喂
 
 **还在打磨：**
 
@@ -151,6 +152,8 @@ v0.1，正在用 `*.devnu11.cn` 做端到端验证。
 ├── dicts/            # 字典进化链路
 │   ├── curated/      #   默认可用（子域名 16 万、路径、参数名）
 │   └── candidates/   #   实战新发现 → 复盘后决定是否晋升
+├── pentest-intel-hub/ # 情报蒸馏模块 — 从安全情报到知识卡片到候选建议的完整管线
+│                     #   raw → normalized → scoring → knowledge card → validation → export → promoted
 ├── tools/            # 自写辅助脚本 — 可复用逻辑放这里，不在 CLI 里堆
 ├── cli/              # pents CLI — AI 的机械手，不做智能判断
 ├── docs/             # 项目文档 — 方向/路线/看板/决策记录/开发规范
