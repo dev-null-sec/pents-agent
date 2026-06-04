@@ -6,7 +6,7 @@
   },
   "next_id": 56,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T06:56:09+00:00",
+  "updated_at": "2026-06-04T07:07:27+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T06:55:57+00:00",
+      "updated_at": "2026-06-04T07:07:06+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T06:55:57+00:00"
+      "released_at": "2026-06-04T07:07:06+00:00"
     },
     {
       "id": "claude-code",
@@ -103,29 +103,6 @@
       "leftovers": "",
       "created_at": "2026-06-03T02:33:34+00:00",
       "updated_at": "2026-06-03T02:33:34+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0053",
-      "title": "设计 browser-test-agent 任务卡与证据回填流程",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "围绕 agent-browser 设计浏览器交互测试任务卡：登录/注册/表单/导航/截图/状态保持/证据采集；明确 Claude Code 使用 agent-browser 执行、pents 负责记录和合并；输出需包含截图、关键请求/响应摘要、交互步骤、停止条件和 finding 候选回填。"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-04T06:28:37+00:00",
-      "updated_at": "2026-06-04T06:28:37+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     },
@@ -1998,6 +1975,41 @@
       "started_at": "2026-06-04T06:50:28+00:00",
       "completed_at": "2026-06-04T06:55:57+00:00",
       "archived_at": "2026-06-04T06:56:09+00:00"
+    },
+    {
+      "id": "T-0053",
+      "title": "设计 browser-test-agent 任务卡与证据回填流程",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "docs/项目路线/README.md",
+        "docs/项目路线/browser-test-agent流程.md",
+        "docs/项目路线/模板与数据结构.md",
+        "templates/asset-card.md",
+        "templates/browser-test-agent-brief.md",
+        "templates/evidence.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "围绕 agent-browser 设计浏览器交互测试任务卡：登录/注册/表单/导航/截图/状态保持/证据采集；明确 Claude Code 使用 agent-browser 执行、pents 负责记录和合并；输出需包含截图、关键请求/响应摘要、交互步骤、停止条件和 finding 候选回填。"
+      ],
+      "verification": "已新增 docs/项目路线/browser-test-agent流程.md 和 templates/browser-test-agent-brief.md；已在 docs/项目路线/README.md、docs/项目路线/模板与数据结构.md、templates/asset-card.md、templates/evidence.md、docs/当前状态.md 中接入 browser-test-agent 流程。验证：rg 检查 browser-test-agent、agent-browser、浏览器交互证据、截图、网络摘要、入口卡片、不要操作 ai-board 等关键词；Test-Path 确认路线文档和任务卡模板存在；本轮未打开浏览器、未访问真实目标。",
+      "deferred_verification": "",
+      "leftovers": "未实现 pents brief --agent browser-test、pents asset card 或浏览器证据自动合并；后续可单独排期。",
+      "created_at": "2026-06-04T06:28:37+00:00",
+      "updated_at": "2026-06-04T07:07:27+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T06:59:53+00:00",
+      "started_at": "2026-06-04T06:59:53+00:00",
+      "completed_at": "2026-06-04T07:07:06+00:00",
+      "archived_at": "2026-06-04T07:07:27+00:00"
     }
   ]
 }

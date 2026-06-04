@@ -59,6 +59,24 @@
 | OAuth |  | 未验证 |  |
 | 管理功能 |  | 未验证 |  |
 
+## 浏览器验证
+
+| 字段 | 内容 |
+| --- | --- |
+| 执行 run | {{browser_run}} |
+| 浏览器会话 | {{browser_session}} |
+| 账号角色 | {{browser_account_role}} |
+| 首屏截图 | {{browser_first_screenshot}} |
+| 关键截图 | {{browser_key_screenshots}} |
+| 网络摘要 | {{browser_network_summary}} |
+| 状态文件 | {{browser_state_file}} |
+
+### 交互步骤摘要
+
+| 步骤 | 动作 | 等待条件 | 结果 | 证据 |
+| --- | --- | --- | --- | --- |
+| 1 |  |  |  |  |
+
 ## 高价值测试点
 
 | 测试点 | 状态 | 前置条件 | 证据 / 来源 |
