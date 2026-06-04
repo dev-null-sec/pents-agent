@@ -4,6 +4,8 @@ A system where AI runs penetration tests autonomously and gets better after ever
 
 English | [中文](./README.md)
 
+> For authorized security testing only. Please read the [Disclaimer](./DISCLAIMER.md) and [Security Policy](./SECURITY.md) before publishing, contributing, or using this project in an engagement.
+
 <p align="center">
   <img src="https://img.shields.io/badge/Claude_Code-AI_Engine-d97757?logo=anthropic&logoColor=white" alt="Claude Code" />
   <img src="https://img.shields.io/badge/Python-3.10+-3776ab?logo=python&logoColor=white" alt="Python" />
@@ -55,7 +57,7 @@ This isn't laziness. It means: projects can be packed up and moved anywhere, con
 
 You won't find a wall of CLI tutorials here. You talk to Claude Code in natural language:
 
-> Run recon against `*.devnu11.cn`. DNS enumeration is authorized. HTTP probing and test accounts are not yet approved. Passive recon is done — five sources, all empty. Target appears to be behind Cloudflare. Next step: active DNS dictionary enumeration with `dicts/curated/subdomains-main.txt`. Run canary and wildcard detection first.
+> Run recon against `*.example.test`. DNS enumeration is authorized. HTTP probing and test accounts are not yet approved. Passive recon is done — five sources, all empty. Target appears to be behind a CDN. Next step: active DNS dictionary enumeration with `dicts/curated/subdomains-main.txt`. Run canary and wildcard detection first.
 
 Or:
 
@@ -63,7 +65,7 @@ Or:
 
 Or even simpler:
 
-> Retest `projects/devnu11-cn-e2e/`. Got a test account: `admin@devnu11.cn`. Low-frequency HTTP probing is authorized, max 5 req/s. Don't touch `/api/admin/delete` or `/api/admin/users`.
+> Retest `projects/demo-e2e/`. A sanitized test account is available. Low-frequency HTTP probing is authorized, max 5 req/s. Do not touch deletion, payment, or privileged write endpoints listed in the task card.
 
 The AI reads the scope, calls `pents` to scaffold a run, loads the right skills, registers evidence, merges results, and writes the report delta. You just define the objective and the boundaries.
 
@@ -81,51 +83,42 @@ Sub-agent protocols are defined too: the main agent owns scope, task decompositi
 
 ### The evolutionary loop
 
-```
-                        ┌──────────────────────┐
-                        │  Human gives the order │
-                        └──────────┬───────────┘
-                                   │
-                   ┌───────────────▼───────────────┐
-                   │  AI reads scope + CLAUDE.md    │
-                   │  Loads skills, executes tests   │
-                   │  Records as it goes              │
-                   └───────────────┬───────────────┘
-                                   │
-                   ┌───────────────▼───────────────┐
-                   │  Finding → pents finding        │
-                   │  Report  → pents report          │
-                   └───────────────┬───────────────┘
-                                   │
-                   ┌───────────────▼───────────────┐
-                   │  Review (pents review)          │
-                   │                                 │
-                   │  • Skill effective? → revise     │
-                   │  • Wordlists miss anything? →    │
-                   │    candidates/                   │
-                   │  • Hit any footguns? → codify    │
-                   │  • Collaboration gaps? → update  │
-                   │    protocol                      │
-                   └───────────────┬───────────────┘
-                                   │
-                   ┌───────────────▼───────────────┐
-                   │  System upgrades itself         │
-                   │                                 │
-                   │  skills/   ← revised skills      │
-                   │  dicts/    ← promoted wordlists  │
-                   │  docs/     ← new rules/insights  │
-                   │  CLAUDE.md ← updated constraints │
-                   └───────────────┬───────────────┘
-                                   │
-                                   ▼
-                     Next test is stronger than the last
+```mermaid
+flowchart LR
+    A["Human gives the order"]
+    B["Confirm scope<br/>scope + CLAUDE.md"]
+    C["Run tests<br/>load skills<br/>call pents"]
+    D["Record evidence<br/>inventory<br/>evidence"]
+    E["Produce results<br/>finding<br/>report"]
+    F["Review<br/>pents review"]
+    G["Upgrade the system<br/>skills / dicts / docs"]
+    H["The next test is stronger"]
+
+    A --> B --> C --> D --> E --> F --> G --> H
+    H -. feedback .-> B
+
+    F --> F1["Was this skill useful?<br/>-> revise / create"]
+    F --> F2["Did the wordlist miss anything?<br/>-> candidates/"]
+    F --> F3["What footgun did we hit?<br/>-> codify the rule"]
+    F --> F4["Where did collaboration get stuck?<br/>-> update protocol"]
+    F1 --> G
+    F2 --> G
+    F3 --> G
+    F4 --> G
+
+    classDef main fill:#eef2ff,stroke:#6366f1,stroke-width:1.4px,color:#111827;
+    classDef review fill:#fff7ed,stroke:#f97316,stroke-width:1.2px,color:#111827;
+    classDef result fill:#ecfdf5,stroke:#10b981,stroke-width:1.4px,color:#111827;
+    class A,B,C,D,E,F,G main;
+    class F1,F2,F3,F4 review;
+    class H result;
 ```
 
 This loop isn't figurative. Every link corresponds to actual files and scripts in the repo. `dicts/candidates/` genuinely accumulates entries discovered in real engagements. `docs/项目路线/skill质量标准.md` contains actual review criteria for skills. `review.md` records the real-world performance of every skill used.
 
 ## What it can do right now
 
-v0.1, being validated end-to-end against `*.devnu11.cn`.
+v0.1, already validated through authorized end-to-end test projects; public examples are kept sanitized where possible.
 
 **Working:**
 
@@ -138,15 +131,15 @@ v0.1, being validated end-to-end against `*.devnu11.cn`.
 
 **Still rough:**
 
-- Active DNS CLI encapsulation (currently Claude Code manually chains dnsx/puredns)
-- HTTP probing authorization layering
+- Low-frequency HTTP/CDN validation and result backfill
+- Run result merging and report-delta automation
 - More real-world validation miles
 
 ## The skeleton
 
 ```
 ./
-├── skills/           # 22 curated Chinese skills: recon/web/api
+├── skills/           # 23 curated Chinese skills: recon/web/api
 │                     #   Each reviewed for quality. Revised from field feedback.
 ├── templates/        # Project templates — pents new uses them to scaffold
 ├── projects/         # Engagement archives — one dir per project, runs in R001/R002 layers
@@ -169,6 +162,8 @@ Once more: the CLI's UI is not the command line. Its UI is natural language dire
 `pents` is the AI's tool — it handles deterministic, reproducible operations where a language model shouldn't improvise:
 
 - `new` — scaffolds a project directory and templates. Never misses a file or mangles whitespace.
+- `active-dns` — generates controlled active DNS plans with canary, wildcard checks, and timing.
+- `vision-review` — sends screenshots to a vision model and returns structured JSON.
 - `evidence` — registers evidence with automatic SHA256 hashing. Never forgets a field.
 - `merge` — parses structured sub-agent JSON and merges it into inventory/progress. Never drops a row.
 - `report` — aggregates findings into a report draft. Severity stats and evidence gap detection are deterministic.
@@ -194,6 +189,10 @@ If the AI had to do these by hand, every session would burn tokens reminding its
 - Nothing executes outside authorized scope. Ever. Scope is always the first gate.
 - Not bulk-porting 300+ raw skills. Web/API MVP only. Use one, revise one.
 - Weak password, RCE, SQL, and XSS payload wordlists are not enabled by default — they require explicit authorization.
+
+## Contributing
+
+Issues and pull requests are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first: do not submit real target data, secrets, screenshots, HAR files, or unsanitized engagement reports.
 
 ## License
 
