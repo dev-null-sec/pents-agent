@@ -41,6 +41,20 @@
 - 破坏性写入、删除数据、持久化、社工、钓鱼、凭据填充。
 - 未提供账号前的认证后 API、管理员权限、支付、OAuth 业务流验证。
 
+## 源站线索处理
+
+本任务只允许低频验证已发现子域名的 HTTP/CDN、服务指纹和 80/443/8080/8443 Web 端口，不自动授权源站 IP 直连。
+
+按 `docs/项目路线/源站线索分级与授权策略.md` 处理：
+
+| 层级 | 本任务处理 |
+| --- | --- |
+| L1 被动线索 | 可记录历史 DNS、证书、favicon、测绘搜索、CNAME、响应头、JS/HTML 中的源站线索 |
+| L2 低频验证 | 本任务未授权；若发现疑似源站 IP，记录 `origin_validation_requires_confirmation` |
+| L3 高风险手段 | 禁止；不做 CDN/WAF 绕过、Host 爆破、网段扫描、全端口扫描或漏洞 payload |
+
+如果发现疑似源站 IP、同 IP 绑定域名、测绘搜索结果或 CDN 前后差异，只能写入 inventory/evidence/review 的源站线索区，状态标记为 `origin-candidate-needs-confirmation`，不得直连验证。
+
 ## 建议速率
 
 HTTP/CDN/服务指纹：
@@ -67,6 +81,7 @@ HTTP/CDN/服务指纹：
 ## 推荐流程
 
 1. 读取 `scope.md`、`progress.md`、`inventory.md`、`evidence.md` 和本任务卡。
+   - 同时读取 `docs/项目路线/源站线索分级与授权策略.md`，按 L1/L2/L3 记录源站线索。
 2. 创建新的 run 目录，命名建议：`R004-2026-06-04-low-frequency-http-validation`，如已有 R004 则顺延编号。
 3. 记录执行开始时间、实际速率区间、并发、请求预算和停止条件。
 4. 对当前 4 个子域名做 HTTP/HTTPS 存活、CDN/WAF 和服务指纹确认。

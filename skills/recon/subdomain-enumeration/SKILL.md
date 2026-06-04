@@ -33,6 +33,7 @@ optional_tools:
 - 主动子域名枚举主要产生 DNS 查询，不等同于 HTTP/API 低频探测；它可以采用受控批量解析，但必须有并发、速率、字典规模和停止条件。
 - HTTP 存活探测、目录/API 路径发现、登录态接口探测、端口确认、源站直连验证属于更敏感动作，必须按低频或专项授权执行。
 - 如果 scope 明确排除某些子域名、第三方资产、源站 IP 或云厂商基础设施，必须在枚举和后续验证中排除。
+- 源站相关动作按 `docs/项目路线/源站线索分级与授权策略.md` 分层：历史 DNS、证书、favicon、测绘搜索等只做被动线索记录；Host 绑定验证、源站 IP 直连和小范围端口确认必须单独确认；CDN/WAF 绕过、全端口扫描、网段扫描和 Host 爆破默认禁止。
 
 ## 前置条件
 
@@ -119,6 +120,7 @@ subfinder -d <target.com> -silent -o subs_passive.txt
 - 将 Cloudflare、Turnstile、CNAME、证书 SAN、响应头作为线索记录，不对 Cloudflare 或其他 CDN 基础设施继续测试。
 - 不要因为被动来源全空就扩大到源站 IP 直连；源站 IP 必须由用户单独确认授权。
 - 主动 DNS 枚举可以继续执行，但必须用已确认的 DNS 并发/速率和 resolver，并记录命中质量与噪声。
+- 历史 DNS、测绘搜索或 favicon 指纹发现的疑似源站 IP 只标记为 `origin-candidate-needs-confirmation`；未获确认前不得做 Host 绑定验证、IP 直连或端口确认。
 
 ### 步骤 2：主动 DNS 子域名枚举
 
@@ -208,6 +210,7 @@ dnsx -silent -l subs_all.txt -a -aaaa -cname -json -o subs_resolved.jsonl
 - 如果解析到 Cloudflare、Akamai、Fastly、阿里云、腾讯云、华为云等第三方网络，只记录 CDN/云厂商线索，不继续测试第三方基础设施。
 - 源站 IP 只作为线索，未获明确授权前不得直连验证。
 - NOERROR/NODATA 必须和 A/AAAA/CNAME 分开写，避免把没有地址记录的域名当成可访问资产。
+- 反查绑定域名、测绘结果、历史 DNS 和证书共现只能提升线索置信度，不能把第三方资产自动提升为可测资产。
 
 ### 步骤 4：HTTP 存活探测
 

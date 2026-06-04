@@ -31,6 +31,16 @@
 | Service |  |  |  |
 | App |  |  |  |
 
+## 源站线索
+
+| 字段 | 内容 |
+| --- | --- |
+| 源站线索状态 | {{origin_clue_status}} |
+| 线索来源 | {{origin_clue_source}} |
+| 允许验证动作 | {{origin_allowed_validation}} |
+| 验证约束 | {{origin_validation_constraints}} |
+| 待确认事项 | {{origin_confirmations}} |
+
 ## 指纹与技术栈
 
 | 类型 | 值 | 置信度 | 证据 |
