@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 49,
+  "next_id": 51,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T02:57:51+00:00",
+  "updated_at": "2026-06-04T03:17:16+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T02:57:31+00:00",
+      "updated_at": "2026-06-04T03:17:07+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T02:57:31+00:00"
+      "released_at": "2026-06-04T03:17:07+00:00"
     },
     {
       "id": "claude-code",
@@ -107,33 +107,50 @@
       "lease_expires_at": ""
     },
     {
-      "id": "T-0042",
-      "title": "由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举",
+      "id": "T-0049",
+      "title": "更新 subdomain-enumeration skill 的 massdns direct 与 NODATA 口径",
       "description": "",
-      "priority": "P0",
-      "status": "blocked",
+      "priority": "P1",
+      "status": "inbox",
       "lane": "默认",
-      "source": "",
-      "owner_agent": "codex",
-      "scope": [
-        "docs/当前状态.md",
-        "projects/devnu11-cn-e2e"
-      ],
+      "source": "review",
+      "owner_agent": "",
+      "scope": [],
       "verify_scope": [],
       "depends_on": [],
       "acceptance": [
-        "Codex 只提供工具链路前置验证材料和建议参数；Claude Code 使用 dicts/curated/subdomains-main.txt 对 devnu11.cn 授权子域范围执行正式主动 DNS 枚举；执行前先跑 canary、随机 NXDOMAIN 和 resolver 自检；结果回填 projects/devnu11-cn-e2e，并明确与 R001 Codex 前置验证结果对比"
+        "skills/recon/subdomain-enumeration/SKILL.md 明确 massdns direct 为默认主动 DNS 链路；说明 massdns Snl 不输出 NODATA 的预期行为；给出何时辅以 dnsx/其他复核捕获 NOERROR/NODATA；保持 Claude Code 不操作 ai-board 的职责边界。"
       ],
       "verification": "",
       "deferred_verification": "",
       "leftovers": "",
-      "created_at": "2026-06-03T08:08:33+00:00",
-      "updated_at": "2026-06-04T02:55:44+00:00",
+      "created_at": "2026-06-04T03:16:42+00:00",
+      "updated_at": "2026-06-04T03:16:42+00:00",
       "lock_owner": "",
-      "lease_expires_at": "",
-      "locked_at": "2026-06-04T02:54:44+00:00",
-      "started_at": "2026-06-03T08:36:28+00:00",
-      "unlocked_at": "2026-06-04T02:55:28+00:00"
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0050",
+      "title": "增强主动 DNS 的 AAAA 与 NODATA 可选复核",
+      "description": "",
+      "priority": "P2",
+      "status": "inbox",
+      "lane": "默认",
+      "source": "review",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "评估 active-dns-massdns.ps1 和 pents active-dns 是否需要增加可选 A/AAAA/CNAME 多记录查询或 dnsx NODATA 复核；默认主链路仍保持 massdns direct 精简快速；输出需继续记录耗时、命中数和差异说明。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T03:16:52+00:00",
+      "updated_at": "2026-06-04T03:16:52+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
     }
   ],
   "archive": [
@@ -1790,6 +1807,39 @@
       "reopened_at": "2026-06-04T02:56:05+00:00",
       "reopen_reason": "T-0042 owner/blocker state adjusted after initial completion; refresh verification and leftovers",
       "archived_at": "2026-06-04T02:57:51+00:00"
+    },
+    {
+      "id": "T-0042",
+      "title": "由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "Codex 只提供工具链路前置验证材料和建议参数；Claude Code 使用 dicts/curated/subdomains-main.txt 对 devnu11.cn 授权子域范围执行正式主动 DNS 枚举；执行前先跑 canary、随机 NXDOMAIN 和 resolver 自检；结果回填 projects/devnu11-cn-e2e，并明确与 R001 Codex 前置验证结果对比"
+      ],
+      "verification": "Claude Code 已按 T-0042 任务卡完成 R003 massdns direct 主动 DNS 复测：dicts/curated/subdomains-main.txt 167377 词条，6 个 resolver 自检通过，wildcard 检查通过，总耗时 60.669 秒，命中 ai/blog/lk/st 4 个可解析子域；与 R001 Codex dnsx 基线的可解析子域完全一致，online.devnu11.cn 差异确认为 NODATA/Snl 输出预期行为。结果已回填 R003 progress/evidence/review/R003-report-delta 和顶层 progress/inventory/evidence/report/review/docs/当前状态。",
+      "deferred_verification": "",
+      "leftovers": "HTTP/CDN 低频探测仍需用户确认授权窗口和请求速率；T-0032 字典分层仍在需求池；已新增 T-0049 更新 subdomain-enumeration skill 口径、T-0050 增强 AAAA/NODATA 可选复核。",
+      "created_at": "2026-06-03T08:08:33+00:00",
+      "updated_at": "2026-06-04T03:17:16+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T03:16:27+00:00",
+      "started_at": "2026-06-04T03:16:27+00:00",
+      "unlocked_at": "2026-06-04T02:55:28+00:00",
+      "reopened_at": "2026-06-04T03:16:15+00:00",
+      "reopen_reason": "Claude Code has completed R003 massdns direct retest and project records are available for Codex verification",
+      "completed_at": "2026-06-04T03:17:07+00:00",
+      "archived_at": "2026-06-04T03:17:16+00:00"
     }
   ]
 }

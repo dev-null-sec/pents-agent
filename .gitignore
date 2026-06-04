@@ -28,6 +28,8 @@ Thumbs.db
 *.tmp
 tmp/
 temp/
+/outputs/
+/raw/
 
 # Local third-party tool runtime and build caches.
 # Tool source/forks under tools/third-party/vendor/ are versioned when maintained by this project.

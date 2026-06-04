@@ -4,7 +4,7 @@
 
 - 项目：devnu11-cn-e2e
 - 目标：`*.devnu11.cn`
-- 报告日期：2026-06-03
+- 报告日期：2026-06-04
 - 测试者：Claude Code (AI-assisted)
 - 范围文件：scope.md
 
@@ -25,7 +25,7 @@
 - 发现多个需进一步验证的敏感功能：系统重启/回滚、SMTP 测试、Admin API Key 重置等
 - 被动子域名枚举（crt.sh）未返回结果
 
-**限制：** 本次测试仅完成静态分析、被动 recon 和 Codex 前置 DNS 链路验证；Claude Code 正式主动 DNS 执行仍待 T-0042。未发起 HTTP、端口、路径/API 或漏洞验证请求。完整的安全评估需要：正式 DNS 执行结果、HTTP 探测授权窗口、请求速率、测试账号、以及对候选入口的低频主动验证许可。
+**限制：** 本次测试已完成静态分析、被动 recon、Codex 前置 DNS 链路验证和 Claude Code 正式主动 DNS 复测。未发起 HTTP、端口、路径/API 或漏洞验证请求。完整的安全评估仍需要：HTTP 探测授权窗口、请求速率、测试账号、以及对候选入口的低频主动验证许可。
 
 ## 测试范围
 
@@ -57,7 +57,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 被动信息收集 | done |  | crt.sh、urlscan、Wayback、OTX、Google |  | 5 个来源均无子域名或 URL 记录 | 无 |
 | JS 静态分析 | done |  | 已分析 4 个前端 JS 文件 |  | 已提取路由、API、参数、OAuth、支付和敏感管理功能 | 无 |
-| 主动 DNS 子域名枚举 | pending | 执行主体待切换 | Codex 已产出前置验证基线 E-0009/E-0010 | Claude Code 正式执行尚未完成 | 需确认正式执行结果是否与 R001 对照一致 | 由 Claude Code 按 T-0042 执行 |
+| 主动 DNS 子域名枚举 | done | — | Codex 前置验证（dnsx, E-0009/E-0010）+ Claude Code 正式执行（massdns direct, E-0011）均已完成 | — | R003 massdns direct 60.669 秒，4 命中与 R001 可解析基线一致 | 无 |
 | HTTP 存活 / CDN / 服务指纹 | blocker | 授权缺失 | 已获得 `ai/blog/lk/st` 候选 DNS 名称和 Cloudflare A/AAAA 线索 | 未对候选入口发起 HTTP 探测 | 无法确认真实入口、响应头、证书、跳转链和 CDN/WAF | 是否允许低频 HTTP 探测、授权窗口、HTTP 请求速率 |
 | 端口确认 | blocker | 目标无输入 / 风险过高 | 已记录小范围端口确认清单 | 未扫描端口 | 无法确认 Web/API 常见端口暴露 | 实际 URL 或授权 IP、端口范围、允许速率 |
 | API / 认证后测试 | blocker | 目标无输入 / 等待账号 | 已从 JS 提取 100+ API 端点 | 未验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 所有漏洞仍为待确认 | 实际 URL、普通测试账号、管理员账号授权或注册许可 |
@@ -96,7 +96,8 @@
 - 命中 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`online.devnu11.cn`、`st.devnu11.cn`。
 - `ai/blog/lk/st` 指向同一组 Cloudflare A/AAAA；`online` 为 NOERROR 但无 A/AAAA，暂不作为 Web 入口。
 - 上一次 0 命中是 dnsx `-wd` 参数误用导致的扫描链路问题，已在 R001 复盘中记录。
-- 该结果只作为工具链路可用性和 Claude Code 正式执行对照基线；正式执行仍待 T-0042。
+- 该结果只作为工具链路可用性和 Claude Code 正式执行对照基线；正式结果见 R003/E-0011。
+- **2026-06-04 Claude Code 已完成 T-0042 正式主动 DNS 枚举**：使用 `massdns direct` 链路（`tools/recon/active-dns-massdns.ps1`），167,377 词条，60.669 秒完成，命中 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn`。可解析子域名命中与 R001 基线完全一致（均指向 Cloudflare IP），`online.devnu11.cn` 为 NODATA 候选不在 massdns Snl 输出中。泛解析检查未发现 wildcard，所有 6 个 resolver 通过健康检查。
 - 在未确认 HTTP 授权窗口和请求速率前，不应对候选子域名执行 HTTP 探测、端口扫描或源站直连。
 
 ### OAuth 集成

@@ -3,7 +3,7 @@
 ## 元数据
 
 - 项目：devnu11-cn-e2e
-- 更新时间：2026-06-03
+- 更新时间：2026-06-04
 - 分析来源：前端 JS 静态分析（js_files/），被动子域名枚举（5 个来源全部无结果），Codex 主动 DNS 工具链路前置验证（2026-06-03，误执行完整字典）
 
 ## 资产
@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- |
 | A-0001 | web/api | `*.devnu11.cn` | in-scope | 用户声明自有域名和服务器，允许授权测试 |
 | A-0002 | web/app | AI API 代理/中转平台（SPA） | identified | 前端 SPA，Vue 3.5.26 + Axios + Vue i18n |
-| A-0003 | dns | `*.devnu11.cn` | preflight-dns-results | 5 个被动来源复查全部无结果；Codex 前置验证误执行完整主字典并命中 5 条（见 E-0009/E-0010），Claude Code 正式执行待 T-0042 |
+| A-0003 | dns | `*.devnu11.cn` | active-dns-done | 5 个被动来源复查全部无结果；R001 Codex 前置验证命中 5 条（见 E-0009/E-0010）；R003 Claude Code massdns direct 正式执行命中 4 条可解析子域（见 E-0011） |
 | A-0004 | software | Sub2API（开源 AI API 代理平台） | identified | GitHub: Wei-Shaw/sub2api；Go + Vue 3 + PostgreSQL + Redis；demo.sub2api.org |
 | A-0005 | cdn/waf | Cloudflare（推测） | clue | 前端 JS 含 Cloudflare Turnstile 集成；被动来源无结果可能因 Cloudflare 泛解析遮挡 |
 | A-0006 | dns | `ai.devnu11.cn` | resolved | A/AAAA 指向 Cloudflare IP：104.21.52.13、172.67.193.236、2606:4700:3030::ac43:c1ec、2606:4700:3036::6815:340d |
@@ -25,7 +25,7 @@
 
 | 检查项 | 当前状态 | 下一步 | 记录位置 |
 | --- | --- | --- | --- |
-| 子域名发现 | 被动完成；主动 DNS 前置验证可用，正式执行待 Claude Code | T-0042 由 Claude Code 正式执行，并与 R001 Codex 前置验证结果对比 | E-0007, E-0008, E-0009 |
+| 子域名发现 | 被动完成；主动 DNS 正式复测完成 | R003 massdns direct 4 命中与 R001 可解析基线一致；下一步确认是否允许低频 HTTP 探测候选入口 | E-0007, E-0008, E-0009, E-0011 |
 | DNS 解析 | ✅ 候选子域名已复核 | `ai/blog/lk/st` 有 Cloudflare A/AAAA；`online` 为 NODATA 候选 | E-0010 |
 | 端口确认 | ⛔ blocker：需 URL+窗口+速率 | 确认后只做 80/443/8080/8443 | 本文件”端口与服务指纹记录模板” |
 | CDN/WAF 判断 | ✅ 被动部分完成 | 已发现 Cloudflare Turnstile 线索；DNS 解析后可确认 | A-0005, E-0004 |
@@ -49,6 +49,7 @@
 | 来源 | 类型 | 采集时间 | 结果 | 备注 |
 | --- | --- | --- | --- | --- |
 | dnsx + `dicts/curated/subdomains-main.txt` | 主动 DNS 字典枚举 | 2026-06-03 | 命中 5 条 | 字典 167377 词条，约 99.363 秒；E-0009 |
+| massdns + `dicts/curated/subdomains-main.txt` | 主动 DNS 字典枚举（Claude Code 正式） | 2026-06-04 | 命中 4 条 | massdns direct，60.669 秒；4 命中与 R001 可解析基线一致；E-0011 |
 
 | 子域名 | DNS 状态 | A/AAAA | 初步判断 | 证据 |
 | --- | --- | --- | --- | --- |
@@ -263,7 +264,7 @@
 
 | 编号 | 测试面 | 负责代理 | 状态 | 备注 |
 | --- | --- | --- | --- | --- |
-| S-0001 | recon | Claude Code / Codex | in-progress | JS 静态分析、被动子域名枚举完成；Codex 已给出主动 DNS 前置验证基线，Claude Code 正式主动 DNS 待 T-0042 |
+| S-0001 | recon | Claude Code / Codex | dns-done/http-pending | JS 静态分析、被动子域名枚举和主动 DNS 正式复测已完成；HTTP/CDN/服务指纹仍待授权 |
 | S-0002 | web | Claude Code | pending | 需存活入口 URL 才能进行手工验证 |
 | S-0003 | api | Claude Code | pending | 需存活入口 + 测试账号才能进行授权测试 |
 | S-0004 | auth | Claude Code | pending | OAuth 配置缺陷检查，需测试账号 |

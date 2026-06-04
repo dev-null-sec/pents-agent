@@ -3,8 +3,8 @@
 ## 概要
 
 - 项目名称：devnu11-cn-e2e
-- 当前阶段：静态分析、被动 recon 完成；主动 DNS 工具链路前置验证已可用，Claude Code 正式执行待办
-- 更新时间：2026-06-03
+- 当前阶段：静态分析、被动 recon 和 Claude Code 正式主动 DNS 已完成；HTTP/CDN、端口、服务指纹和漏洞验证等待授权窗口、速率和账号
+- 更新时间：2026-06-04
 
 ## 时间线
 
@@ -18,6 +18,7 @@
 | 2026-06-02 | Codex | 补强 recon 基本盘交接材料 | 已新增 Claude 低频 recon 任务卡，并在 inventory/evidence 中补充子域名、端口、CDN、源站线索和服务指纹记录模板；Codex 未对目标执行探测 |
 | 2026-06-02 | Claude Code | 低频 recon 被动部分 | 5 个被动来源复查（crt.sh/urlscan/Wayback/OTX/Google）全部无结果；识别软件为 Sub2API；发现 Cloudflare Turnstile 线索；更新 inventory/evidence/progress/review |
 | 2026-06-03 | Codex | 主动 DNS 工具链路前置验证 | 执行边界误判，实际跑完 dnsx 主字典；结果只作为前置验证和对照基线，不作为 Claude Code 正式执行验收 |
+| 2026-06-04 | Claude Code | T-0042 正式主动 DNS 枚举（massdns direct） | 167377 候选，4 命中（ai/blog/lk/st），60.669 秒；与 R001 可解析基线完全一致 |
 
 ## 资产变更
 
@@ -44,7 +45,7 @@
 | 目标 | 测试面 | 前置条件 | 执行主体 | 状态 | 记录要求 |
 | --- | --- | --- | --- | --- | --- |
 | `*.devnu11.cn` | 被动子域名发现 | 被动来源复查 | Claude Code | ✅ done | 5 来源均无结果，记录于 inventory 和 E-0007/E-0008 |
-| `*.devnu11.cn` | 主动 DNS 子域名枚举 | T-0042；Codex 只交接前置验证材料 | Claude Code | ⏳ pending | 正式执行需与 R001 前置验证结果对比 |
+| `*.devnu11.cn` | 主动 DNS 子域名枚举 | T-0042；Claude Code 正式执行 | Claude Code | ✅ done | R003 massdns direct，4 命中与 R001 基线一致；见 E-0011 |
 | `*.devnu11.cn` | 软件识别 | JS 静态分析 + WebSearch | Claude Code | ✅ done | 确认 Sub2API 开源平台，记录于 A-0004, E-0007 |
 | 候选子域名 | HTTP / CDN 判断 | 需要 HTTP 授权窗口和请求速率 | Claude Code | ⛔ blocker | 已有候选 DNS 名称，但本轮未授权 HTTP 探测 |
 | 待确认入口 URL | 端口确认 | 需要 URL、授权窗口、允许速率 | Claude Code | ⛔ blocker | scope.md 前置条件未满足 |
@@ -84,5 +85,5 @@
 - HTTP、端口、路径/API 和漏洞验证前仍需确认授权窗口和允许请求速率。
 - 是否允许把 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 作为下一轮低频 HTTP 候选入口。
 - 如需认证测试，需由用户提供测试账号并明确账号权限。
-- Claude Code 已按 `briefs/claude-low-frequency-recon.md` 执行低频 recon 的被动部分；主动 DNS 正式执行仍应由 Claude Code 接手，Codex 只提供 R001 前置验证材料；HTTP/CDN、端口和服务指纹仍需 HTTP 授权窗口和速率。
+- Claude Code 已按 T-0042 完成正式主动 DNS 复测；HTTP/CDN、端口和服务指纹仍需 HTTP 授权窗口和速率。
 - 数周后复查 crt.sh 证书透明日志。

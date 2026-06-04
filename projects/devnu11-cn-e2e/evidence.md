@@ -3,7 +3,7 @@
 ## 元数据
 
 - 项目：devnu11-cn-e2e
-- 更新时间：2026-06-03
+- 更新时间：2026-06-04
 
 ## 证据列表
 
@@ -19,6 +19,7 @@
 | E-0008 | passive-recon-sweep | `*.devnu11.cn` | — | 本文件下方 | 多来源被动侦察汇总（2026-06-02）：5 个被动来源全部无结果 |
 | E-0009 | active-dns-preflight | *.devnu11.cn |  | runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns.jsonl | Codex 前置链路验证中误执行完整主动 DNS 枚举，命中 ai/blog/lk/online/st；该结果只作工具可用性和 Claude Code 正式执行对照基线。上一次 0 命中为空结果系 dnsx -wd 误用导致未进入暴力枚举流程。; collected_at=2026-06-03 15:46:10; evidence_type=active-dns-preflight; source_url=dnsx://devnu11.cn; headers=tool=dnsx; dictionary=dicts/curated/subdomains-main.txt; dictionary_lines=167377; resolvers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,223.5.5.5,119.29.29.29; threads=2000; retry=2; timeout=2s; rcode=noerror; wildcard_check=5-random-labels-nxdomain; elapsed_seconds=99.363; hits=5; corrected_issue=removed-wd-filter-only-mode; file=runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns.jsonl; sha256=259f3b1a4224afa7b7f52192ec3b3a19520a8519b825c0e3aa6a5a8f66bee692; chain=complete |
 | E-0010 | dns-record-check-preflight | ai.devnu11.cn,blog.devnu11.cn,lk.devnu11.cn,online.devnu11.cn,st.devnu11.cn |  | runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns-record-check.jsonl | 对 Codex 前置验证命中的 5 个子域名补做 A/AAAA/CNAME 复核：ai、blog、lk、st 有 Cloudflare A/AAAA；online 为 NOERROR 但无 A/AAAA，暂记为 NODATA 候选。; collected_at=2026-06-03 15:47:35; evidence_type=dns-record-check-preflight; source_url=dnsx://record-check/devnu11.cn; headers=tool=dnsx; query=a,aaaa,cname; resolvers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,223.5.5.5,119.29.29.29; threads=100; retry=2; timeout=2s; hits_checked=5; a_aaaa_confirmed=4; nodata=online.devnu11.cn; file=runs/R001-2026-06-03-active-dns/raw/dnsx-active-dns-record-check.jsonl; sha256=a5377ea315897660ef151c8197a7575c5d1731dc1facb16ec6b49b0c8d88aa3b; chain=complete |
+| E-0011 | active-dns-massdns | *.devnu11.cn |  | runs/R003-2026-06-03-puredns-massdns-retest/raw/active-dns-massdns.txt | Claude Code 按 T-0042 正式执行 massdns direct 主动 DNS 枚举，167377 词条，60.669 秒，命中 4（ai/blog/lk/st），与 R001 可解析基线完全一致；online 因 NODATA 不在 massdns Snl 输出中。; collected_at=2026-06-04 11:06:36; evidence_type=active-dns; engine=massdns-direct; script=tools/recon/active-dns-massdns.ps1; dictionary=dicts/curated/subdomains-main.txt; dictionary_lines=167377; resolvers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,223.5.5.5,119.29.29.29; record_type=A; hashmap_size=10000; canary=ai.devnu11.cn; wildcard_suspected=false; elapsed_seconds=60.669; hits=4; file=runs/R003-2026-06-03-puredns-massdns-retest/raw/active-dns-massdns.txt; sha256=D01BB1956C376EF52A8C66537E5473B9D8A2E0894BA6B89E3FF11E02E59471B0; chain=complete |
 
 ## 证据 E-0004：前端 JS 静态分析
 

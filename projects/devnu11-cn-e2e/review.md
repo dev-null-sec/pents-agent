@@ -3,7 +3,7 @@
 ## 元信息
 
 - 项目名称：devnu11-cn-e2e
-- 复盘时间：2026-06-02
+- 复盘时间：2026-06-04
 - 复盘人：Claude Code（交互式会话）
 - 任务：ai-board T-0008
 
@@ -101,6 +101,25 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 3. 结果解析必须区分 A/AAAA/CNAME、NOERROR/NODATA、NXDOMAIN 和 wildcard 噪声。
 4. `pents active-dns` 值得入池：自动完成扫描、复核、证据登记和报告摘要。
 
+### 正式主动 DNS 枚举复盘（2026-06-04，R003/T-0042）
+
+Claude Code 已按 T-0042 任务卡正式执行 `devnu11.cn` 主动 DNS 子域名枚举。
+
+| 检查项 | 执行结果 | 评价 |
+| --- | --- | --- |
+| massdns direct 完整枚举 | `dicts/curated/subdomains-main.txt` 167,377 词条，60.669 秒完成 | 比 R001 dnsx 99.363 秒快约 39%，满足性能要求 |
+| 命中结果 | `ai/blog/lk/st` 4 条 | 与 R001 可解析基线完全一致 |
+| A 记录 | `ai/blog/lk/st` 均指向 Cloudflare IP 104.21.52.13 / 172.67.193.236 | 与 R001 E-0010 一致 |
+| Canary 检查 | `ai.devnu11.cn` 可解析 | ✓ |
+| Resolver 自检 | 6 个 resolver 全部通过健康检查 | ✓ |
+| NXDOMAIN 检查 | 无命中，无 wildcard | ✓ |
+| `online.devnu11.cn` | 未在 massdns Snl 输出中出现 | 预期行为：NODATA 域名不包含 A/AAAA/CNAME 记录 |
+
+**关键结论**：
+- `massdns direct` 链路在 Claude Code 执行环境下稳定可用。
+- 与 R001 Codex 前置验证结果在可解析子域名层面完全一致。
+- DNS 枚举的 massdns Snl 输出天然过滤 NODATA 域名，这不是 bug 而是 feature——NODATA 候选已在 E-0010 中单独记录。
+
 ### 本次执行
 
 1. **非交互执行的问题**：上一次非交互 Claude Code 执行中，进程长时间挂起未完成分析。交互式会话中通过 grep 等工具高效完成了静态分析。建议未来非交互任务增加超时和检查点机制。
@@ -135,7 +154,7 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 | 测试面 | 原因类型 | 已尝试来源 / 替代动作 | 未执行项 | 影响 | 建议安装工具 | 需要用户补充 | 后续跟进 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude Code 正式主动 DNS | 执行主体未完成 | Codex 已产出前置验证基线 `ai/blog/lk/online/st` | 未由 Claude Code 正式执行 | 无法满足“由 Claude Code 执行”的协作要求 | dnsx | 无；Codex 已提供建议参数和避坑 | T-0042 由 Claude Code 执行并对比 R001 |
+| Claude Code 正式主动 DNS | ✅ done | R003 massdns direct 已完成，4 命中与 R001 基线一致 | — | — | — | — | T-0042 executed 2026-06-04 |
 | HTTP 存活 / CDN / 服务指纹 | 授权缺失 | Codex 前置验证发现 `ai/blog/lk/st` 有 Cloudflare A/AAAA | 未对候选入口发起 HTTP 探测 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 是否允许对候选入口做低频 HTTP 探测；授权窗口、HTTP 请求速率 | 补齐 HTTP 条件后按低频探测执行 |
 | 小范围端口确认 | 目标无输入 / 风险过高 | 已列出常见 Web/API 端口确认范围 | 未确认 80/443/8080/8443 等端口 | 无法判断暴露端口和服务 banner | 视 Claude 执行环境确认 | 实际 URL 或授权 IP、端口范围、允许速率 | 仅在授权范围和端口范围明确后执行 |
 | API / 认证后测试 | 目标无输入 / 等待账号 | 已从 JS 中提取 100+ API 端点和敏感管理功能 | 未验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 所有 finding 仍为待确认，无法确认实际风险 | 无 | 实际 URL、普通测试账号、管理员账号授权或注册许可 | 入口和账号齐备后启动 Web/API 子代理 |
@@ -144,7 +163,7 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 | 缺口 | 影响 | 如何填补 |
 | --- | --- | --- |
-| Claude Code 正式主动 DNS 未执行 | 不满足原协作约定 | 执行 T-0042，由 Claude Code 正式跑并与 R001 前置验证对比 |
+| 无 | — | Claude Code 正式主动 DNS 已在 R003/T-0042 完成；后续重点转向 HTTP 授权和 Web/API 验证 |
 | HTTP 探测条件未确认 | 无法验证候选子域名是否为真实 Web 入口 | 确认是否允许对 `ai/blog/lk/st` 做低频 HTTP 探测、请求速率和窗口 |
 | 测试账号未提供 | 无法测试认证后端点 | 用户注册或提供测试账号 |
 | JS 文件下载来源未记录 | 证据链不完整 | 记录下载时的 URL 和响应头 |
@@ -153,7 +172,7 @@ Claude Code 已按 `claude-low-frequency-recon.md` 执行被动部分：
 
 ## 后续步骤
 
-1. 先执行 T-0042：由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举，并与 R001 Codex 前置验证结果对比
+1. ~~先执行 T-0042：由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举，并与 R001 Codex 前置验证结果对比~~ ✅ 已完成（2026-06-04，见 R003）
 2. 再向用户确认是否允许对 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 做低频 HTTP 探测
 3. 获得测试账号或确认允许用户注册
 4. 在授权窗口内进行低频 HTTP/CDN/服务指纹主动探测
