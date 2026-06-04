@@ -6,7 +6,7 @@
   },
   "next_id": 51,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T03:17:16+00:00",
+  "updated_at": "2026-06-04T03:25:42+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T03:17:07+00:00",
+      "updated_at": "2026-06-04T03:25:34+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T03:17:07+00:00"
+      "released_at": "2026-06-04T03:25:34+00:00"
     },
     {
       "id": "claude-code",
@@ -103,29 +103,6 @@
       "leftovers": "",
       "created_at": "2026-06-03T02:33:34+00:00",
       "updated_at": "2026-06-03T02:33:34+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0049",
-      "title": "更新 subdomain-enumeration skill 的 massdns direct 与 NODATA 口径",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "review",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "skills/recon/subdomain-enumeration/SKILL.md 明确 massdns direct 为默认主动 DNS 链路；说明 massdns Snl 不输出 NODATA 的预期行为；给出何时辅以 dnsx/其他复核捕获 NOERROR/NODATA；保持 Claude Code 不操作 ai-board 的职责边界。"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-04T03:16:42+00:00",
-      "updated_at": "2026-06-04T03:16:42+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     },
@@ -1840,6 +1817,36 @@
       "reopen_reason": "Claude Code has completed R003 massdns direct retest and project records are available for Codex verification",
       "completed_at": "2026-06-04T03:17:07+00:00",
       "archived_at": "2026-06-04T03:17:16+00:00"
+    },
+    {
+      "id": "T-0049",
+      "title": "更新 subdomain-enumeration skill 的 massdns direct 与 NODATA 口径",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "review",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "skills/recon/subdomain-enumeration/SKILL.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "skills/recon/subdomain-enumeration/SKILL.md 明确 massdns direct 为默认主动 DNS 链路；说明 massdns Snl 不输出 NODATA 的预期行为；给出何时辅以 dnsx/其他复核捕获 NOERROR/NODATA；保持 Claude Code 不操作 ai-board 的职责边界。"
+      ],
+      "verification": "已检查 subdomain-enumeration skill：massdns direct 为默认主动 DNS；Snl/NODATA/NOERROR 口径已补齐；dnsx 仅作小列表和诊断复核；Claude Code 不操作 ai-board 的职责边界保持清晰。rg 口径检查通过；uv run --project cli python -X utf8 -m unittest discover -s tests 通过 13 项；uv run --project cli python -m compileall cli/src 通过。",
+      "deferred_verification": "",
+      "leftovers": "T-0050 仍保留：是否为 active-dns 增加可选 AAAA/NODATA 复核属于工具增强，不在本次 skill 口径收尾范围内；T-0032 仍保留：基于 R003 结果做字典分层治理。",
+      "created_at": "2026-06-04T03:16:42+00:00",
+      "updated_at": "2026-06-04T03:25:42+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T03:21:34+00:00",
+      "started_at": "2026-06-04T03:21:34+00:00",
+      "completed_at": "2026-06-04T03:25:34+00:00",
+      "archived_at": "2026-06-04T03:25:42+00:00"
     }
   ]
 }

@@ -10,12 +10,13 @@ tags:
   - 证书透明
 required_tools:
   - subfinder
-  - puredns
   - massdns
   - dnsx
   - httpx
-  - shuffledns
   - subzy
+optional_tools:
+  - puredns
+  - shuffledns
 ---
 
 # 子域名枚举
@@ -51,7 +52,7 @@ required_tools:
 pents doctor-recon
 ```
 
-如果缺少 `subfinder`、`puredns`、`massdns`、`dnsx`、`httpx`、`shuffledns` 或 `subzy`，必须说明缺失工具、影响步骤、安装建议和可替代方案，不能只写“未执行”。
+如果缺少 `subfinder`、`massdns`、`dnsx`、`httpx`、`puredns`、`shuffledns` 或 `subzy`，必须说明缺失工具、影响步骤、安装建议和可替代方案，不能只写“未执行”。其中 `massdns` 是默认主动 DNS 核心工具；`puredns`、`shuffledns` 和 `dnsx` 是可选 wrapper/诊断/复核工具，不应因为它们缺失就阻塞 `massdns direct` 主链路。
 
 第三方工具优先从 `tools/third-party/bin/` 查找；PATH 只作为 fallback。`dnsx` 若只存在于全局 PATH，仍要在记录中说明这是 fallback，不是项目推荐安装位置。
 
@@ -145,30 +146,40 @@ uv run --project cli pents active-dns "*.target.com" \
   --save
 ```
 
-执行计划必须包含：
+执行计划或脚本必须包含：
 
 1. canary 子域校验。
 2. 随机 NXDOMAIN 泛解析检查。
 3. 逐 resolver 健康检查。
-4. 完整字典枚举。
-5. A/AAAA/CNAME 复核。
-6. `pents evidence` 证据登记命令。
-7. 报告摘要模板。
+4. 候选 FQDN 文件生成。
+5. `massdns` 文件输入完整字典枚举。
+6. 命中提取、耗时 metrics 和 summary。
+7. 必要时的 `pents evidence` 证据登记命令。
 
-工具链选择顺序：
+工具链选择：
 
-- 主链路：`puredns + massdns`。
-- 兼容替代：`shuffledns + massdns`。
-- 兜底：`dnsx -l`，仅在主链路不可用时使用。
+- 默认主链路：`massdns direct`，由 `tools/recon/active-dns-massdns.ps1` 生成候选文件并把文件交给 massdns，不走 stdin pipe。
+- 可选 wrapper：`puredns + massdns`，只用于人工诊断或复杂 wildcard 场景参考；不要让 Claude Code 默认执行 puredns pipe。
+- 可选替代：`shuffledns + massdns`，用于 ProjectDiscovery 风格兼容验证。
+- 可选诊断：`dnsx -l`，用于小列表复核、NOERROR/NODATA 补查或参数排查，不作为默认完整字典枚举链路。
 
 禁止把 `dnsx -wd` 当作常规枚举参数。R001 已暴露过该类参数误用会造成 0 命中误判；如果看到 `dnsx -wd <domain>` 被用于完整字典枚举，必须停止并修正为 `pents active-dns` 计划或 `dnsx -l <fqdn-list>` fallback。
 
-工具缺失处理：
-
-- 缺 `puredns` 或 `massdns`：不能声称已执行主动 DNS 主链路；只能使用 `shuffledns + massdns` 或 `dnsx -l` fallback，并写清影响。
-- 缺 `shuffledns`：仍可用 `puredns + massdns`；如果主链路也缺失，只能进入 `dnsx -l` fallback。
-- 缺 `dnsx`：不能完成 canary、resolver 自检和 A/AAAA/CNAME 复核，应阻塞并建议按 `pents doctor-recon` 安装。
+- 缺 `massdns`：不能执行默认主动 DNS 主链路，应阻塞并建议按 `pents doctor-recon` 补齐项目本地工具。
+- 缺 `puredns` 或 `shuffledns`：默认 `massdns direct` 不受影响，只记录 optional wrapper/fallback 缺失。
+- 缺 `dnsx`：默认 `massdns direct` 仍可执行；但不能做 dnsx 小列表诊断或 NOERROR/NODATA 补查，应写清复核能力缺失。
 - 缺 resolver 授权或 canary：不执行完整枚举，只记录 blocker。
+
+#### massdns Snl 与 NODATA
+
+`massdns -o Snl` 只输出存在 A/AAAA/CNAME 等记录的结果。NOERROR 但无 A/AAAA/CNAME 的域名不会出现在命中列表里，这是预期行为，不是漏扫。
+
+R003 devnu11 复测中，`massdns direct` 命中 `ai/blog/lk/st` 4 个可解析子域；R001 dnsx 额外出现 `online.devnu11.cn`，原因是该域名为 NOERROR/NODATA 候选。报告对比时必须写成：
+
+- `massdns hits`：可解析入口候选。
+- `dnsx NOERROR/NODATA`：DNS 存在但无地址记录的候选，不直接作为 Web 入口。
+
+如果任务需要捕获 NOERROR/NODATA，不要改回 puredns pipe；应对小列表、已知候选或专项候选文件追加 `dnsx` 复核，并单独记录其耗时、query 类型和差异。
 
 ### 步骤 3：DNS 解析验证与去噪
 
@@ -240,7 +251,7 @@ HTTP/路径/API/端口探测遇到以下情况应立即暂停：
 ```text
 主动 DNS 子域名枚举：未执行
 原因：缺少 <授权窗口 / DNS 并发或速率 / 字典规模 / 解析器来源 / scope 确认>
-缺失工具：<puredns / massdns / dnsx / shuffledns / 无>
+缺失工具：<massdns / dnsx / puredns / shuffledns / 无；说明核心或可选>
 安装建议：<运行 pents doctor-recon 后摘录具体建议；不要只写“安装工具”>
 已完成替代项：<被动来源、本地 JS、证书、历史 URL 等>
 影响：无法确认精选字典能否发现新子域名
@@ -257,7 +268,7 @@ HTTP/路径/API/端口探测遇到以下情况应立即暂停：
 目标根域：<target.com>
 授权状态：<被动 / 主动 DNS / HTTP 探测分别说明>
 被动来源：<来源 + 数量 + 文件>
-主动 DNS：<主链路 puredns+massdns / 替代 shuffledns+massdns / dnsx-l fallback / 未执行>
+主动 DNS：<默认 massdns direct / 可选 puredns+massdns wrapper / 替代 shuffledns+massdns / dnsx-l 诊断 / 未执行>
 Canary：<目标 + 命中/未命中 + 证据文件>
 NXDOMAIN / wildcard：<随机目标 + 结果 + 是否 wildcard-noise>
 Resolver：<保留 resolver / 剔除 resolver / 剔除原因>
@@ -269,7 +280,7 @@ DNS 结果分类：
   - nxdomain: <数量>
   - wildcard-noise: <数量>
   - resolver-error: <数量>
-工具缺失或 fallback：<缺失工具、fallback 原因、影响>
+工具缺失或 fallback：<缺失工具、是否影响 massdns direct 主链路、fallback 原因、影响>
 下一步：<HTTP 探测 / 等待授权 / 字典回灌 / skill 修订>
 证据：<E-xxxx 或待登记文件路径>
 ```
@@ -288,9 +299,9 @@ DNS 结果分类：
 ## 验收标准
 
 1. 至少通过 2 类被动来源收集子域名。
-2. 如果主动 DNS 条件满足，已生成或执行 `pents active-dns` 计划，并完成 canary、随机 NXDOMAIN、逐 resolver 自检后才进入完整字典枚举。
-3. 所有候选子域名经过 DNS 解析验证、A/AAAA/CNAME 复核和 wildcard 去噪。
+2. 如果主动 DNS 条件满足，已生成或执行 `pents active-dns` 计划，并确认默认主链路为 `massdns direct`。
+3. 完整枚举前已完成 canary、随机 NXDOMAIN 和逐 resolver 自检；结果记录候选数、命中数、耗时和 wildcard 结论。
 4. HTTP 存活探测按低频节奏执行，并记录标题、状态码和技术栈。
-5. DNS 结果按 resolved-a、resolved-aaaa、resolved-cname、nodata、nxdomain、wildcard-noise、resolver-error 分类。
+5. DNS 结果按 resolved-a、resolved-aaaa、resolved-cname、nodata、nxdomain、wildcard-noise、resolver-error 分类；如果使用 massdns Snl，明确说明 NODATA 不会出现在 massdns 命中列表中，需用 dnsx 等复核补充。
 6. 跳过项写明具体原因、缺失工具、安装建议、影响和下一步需要用户确认的信息。
 7. 结果已回填 inventory、evidence、progress、review，并记录字典回灌建议。
