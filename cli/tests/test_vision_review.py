@@ -73,6 +73,42 @@ class VisionReviewTests(unittest.TestCase):
             self.assertEqual(data["error_type"], "missing_api_key")
             self.assertNotIn("sk-", stdout.getvalue().lower())
 
+    def test_env_file_supplies_vision_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root / "page.png"
+            image.write_bytes(PNG_1X1)
+            (root / ".env").write_text(
+                "\n".join(
+                    [
+                        "PENTS_VISION_API_KEY=file-key",
+                        "PENTS_VISION_BASE_URL=https://vision.example.test/v1",
+                        "PENTS_VISION_MODEL=file-model",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with patch("pents.cli.workspace_root", return_value=root):
+                with patch.dict(os.environ, {}, clear=True):
+                    with redirect_stdout(stdout):
+                        code = main(
+                            [
+                                "vision-review",
+                                str(image),
+                                "--question",
+                                "判断页面是否有验证码",
+                                "--mock",
+                            ]
+                        )
+
+            self.assertEqual(code, 0)
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["model"], "file-model")
+            self.assertEqual(data["api_base_url"], "https://vision.example.test/v1")
+            self.assertEqual(data["env_files_loaded"], [str(root / ".env")])
+
 
 if __name__ == "__main__":
     unittest.main()

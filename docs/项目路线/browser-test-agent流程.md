@@ -95,8 +95,8 @@ open -> snapshot -i -> act -> wait -> snapshot -i -> evidence
 
 - 给 `pents vision-review` 的问题必须窄，例如“这张截图里是否出现 Turnstile？”。
 - 只传截图路径、问题和必要上下文；CLI 只读取本地图片并调用视觉 API，不操作浏览器。
-- API key 只允许通过环境变量读取，例如 `PENTS_VISION_API_KEY`；不得写入任务卡、shell 历史、报告或截图目录。
-- 视觉模型通过 `PENTS_VISION_MODEL` 或 `--model` 指定；OpenAI-compatible base URL 通过 `PENTS_VISION_BASE_URL` 或 `--base-url` 指定。
+- API key 只允许通过本地 `.env` / `.env.local` 或环境变量读取，例如 `PENTS_VISION_API_KEY`；不得写入任务卡、shell 历史、报告或截图目录。真实 `.env` 不入 git，只提交 `.env.example`。
+- 视觉模型通过 `PENTS_VISION_MODEL` 或 `--model` 指定；OpenAI-compatible base URL 通过 `PENTS_VISION_BASE_URL` 或 `--base-url` 指定。`pents vision-review` 默认自动读取项目根目录 `.env` 和 `.env.local`。
 - token 上限字段默认使用 `max_tokens`；官方 MiMo API 示例使用 `max_completion_tokens`，可通过 `--token-param max_completion_tokens` 或 `PENTS_VISION_TOKEN_PARAM=max_completion_tokens` 指定。CLI 在 base URL 为 `api.xiaomimimo.com` 时会自动使用 `max_completion_tokens`。
 - 如果 CLI 返回 `missing_api_key`、`missing_model`、`api_timeout_or_network_error`、`can_read_image=false` 或其他错误，记录 blocker，不猜测图片内容。
 - Claude Code 内置 `vision-reviewer` 子代理只作为可选对比链路，不再作为默认视觉主链路。

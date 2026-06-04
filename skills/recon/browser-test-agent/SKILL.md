@@ -42,7 +42,7 @@ required_tools:
 - 已读取 `scope.md`、`inventory.md`、相关入口卡片、当前 run 的 `brief.md` 和 `docs/项目路线/browser-test-agent流程.md`。
 - 本机可运行 `agent-browser skills get core`，并已理解 `open -> snapshot -i -> act -> wait -> snapshot -i` 的循环。
 - 已准备 run 目录下的 `outputs/browser/screenshots/`、`outputs/browser/snapshots/`、`outputs/browser/network-summary.md` 和 `raw/browser/`。
-- 如果需要视觉判断，优先调用 `uv run --project cli pents vision-review <screenshot> --question <窄问题> --out <json>`；API key 只允许通过环境变量读取，不能写入任务卡、日志或报告。
+- 如果需要视觉判断，优先调用 `uv run --project cli pents vision-review <screenshot> --question <窄问题> --out <json>`；API key 只允许通过本地 `.env` / `.env.local` 或环境变量读取，不能写入任务卡、日志或报告。
 
 ## 执行步骤
 

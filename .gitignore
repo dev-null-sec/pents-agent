@@ -31,6 +31,11 @@ temp/
 /outputs/
 /raw/
 
+# Local secrets and API keys
+.env
+.env.*
+!.env.example
+
 # Local third-party tool runtime and build caches.
 # Tool source/forks under tools/third-party/vendor/ are versioned when maintained by this project.
 tools/third-party/bin/*

@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 62,
+  "next_id": 63,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T09:33:13+00:00",
+  "updated_at": "2026-06-04T09:46:00+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T09:33:05+00:00",
+      "updated_at": "2026-06-04T09:45:47+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T09:33:05+00:00"
+      "released_at": "2026-06-04T09:45:47+00:00"
     },
     {
       "id": "claude-code",
@@ -2206,6 +2206,43 @@
       "started_at": "2026-06-04T09:08:21+00:00",
       "completed_at": "2026-06-04T09:33:05+00:00",
       "archived_at": "2026-06-04T09:33:13+00:00"
+    },
+    {
+      "id": "T-0062",
+      "title": "为 vision-review 支持本地 env 文件",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "代理协作能力",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        ".env.example",
+        ".gitignore",
+        "cli/src/pents/cli.py",
+        "cli/tests/test_vision_review.py",
+        "docs/当前状态.md",
+        "docs/项目路线/browser-test-agent流程.md",
+        "projects/hiwonder-cn-canary/briefs/claude-t0058-mimo-vision-canary.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "pents vision-review 自动读取项目根目录 .env/.env.local 中的 PENTS_VISION_* 配置",
+        "真实 .env 不入仓，提供 .env.example 模板",
+        "环境变量优先级高于 env 文件，测试覆盖 env 文件读取"
+      ],
+      "verification": "uv run --project cli python -m unittest discover -s cli/tests 通过；pents vision-review 在无命令行 base-url/model/key 的情况下自动读取项目根 .env 并完成 mimo-v2.5 识图；rg 确认 token 未落盘；.env 被 git ignore；git diff --check 通过；ai-board conflicts 无冲突",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-04T09:39:16+00:00",
+      "updated_at": "2026-06-04T09:46:00+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T09:39:41+00:00",
+      "started_at": "2026-06-04T09:39:41+00:00",
+      "completed_at": "2026-06-04T09:45:47+00:00",
+      "archived_at": "2026-06-04T09:46:00+00:00"
     }
   ]
 }

@@ -91,7 +91,7 @@
 uv run --project cli pents vision-review runs/Rxxx/outputs/browser/screenshots/page.png --question "这张截图里是否出现验证码或 Turnstile？" --out runs/Rxxx/outputs/browser/visual-reviews/page.json
 ```
 
-API key 只允许通过环境变量读取。若 CLI 返回 `missing_api_key`、`missing_model`、`api_timeout_or_network_error` 或 `can_read_image=false`，记录 blocker，不要猜测截图内容，不要改用 Claude Code 内置视觉子代理反复尝试，除非任务卡明确要求做模型链路对比 canary。
+API key 只允许通过本地 `.env` / `.env.local` 或环境变量读取。若 CLI 返回 `missing_api_key`、`missing_model`、`api_timeout_or_network_error` 或 `can_read_image=false`，记录 blocker，不要猜测截图内容，不要改用 Claude Code 内置视觉子代理反复尝试，除非任务卡明确要求做模型链路对比 canary。
 
 ## 建议流程
 

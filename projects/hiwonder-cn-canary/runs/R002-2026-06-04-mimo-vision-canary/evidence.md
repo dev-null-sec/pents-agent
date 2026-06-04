@@ -58,3 +58,4 @@
   - vision_model=mimo-v2.5
   - vision_base_url=https://token-plan-cn.xiaomimimo.com/v1
   - vision_canary_status=ok
+- 补充验证：`outputs/browser/visual-reviews/pents-vision-cli-smoke-env-file.json` 证明 `pents vision-review` 可自动读取项目根目录 `.env` 完成识图，不需要在任务提示里写 key、base URL 或模型名

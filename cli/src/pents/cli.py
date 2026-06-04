@@ -255,9 +255,9 @@ def normalize_vision_result(value: dict[str, object] | None) -> dict[str, object
         result["visible_interactive_elements"] = [str(result["visible_interactive_elements"])]
     visible_text = " ".join(str(item).lower() for item in result.get("visible_interactive_elements", []))
     captcha = result.get("captcha_or_waf")
-    if isinstance(captcha, dict) and captcha.get("present") is None and "captcha" in visible_text:
+    if isinstance(captcha, dict) and captcha.get("present") is None and ("captcha" in visible_text or "验证码" in visible_text):
         captcha["present"] = True
-        captcha["type"] = captcha.get("type") or "captcha"
+        captcha["type"] = captcha.get("type") or ("captcha" if "captcha" in visible_text else "验证码")
     return result
 
 
@@ -350,6 +350,39 @@ def resolve_plain_path(root: Path, value: str) -> Path:
     return path if path.is_absolute() else root / path
 
 
+def parse_env_value(value: str) -> str:
+    item = value.strip()
+    if len(item) >= 2 and item[0] == item[-1] and item[0] in {'"', "'"}:
+        return item[1:-1]
+    return item
+
+
+def load_env_file(path: Path) -> bool:
+    if not path.exists() or not path.is_file():
+        return False
+    for raw_line in read_text(path).splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        key, separator, value = line.partition("=")
+        key = key.strip()
+        if not separator or not key or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+            continue
+        os.environ.setdefault(key, parse_env_value(value))
+    return True
+
+
+def load_env_files(root: Path, explicit: str) -> list[str]:
+    candidates = [resolve_plain_path(root, explicit)] if explicit else [root / ".env", root / ".env.local"]
+    loaded: list[str] = []
+    for path in candidates:
+        if load_env_file(path):
+            loaded.append(str(path))
+    return loaded
+
+
 def vision_record(
     *,
     status: str,
@@ -366,6 +399,7 @@ def vision_record(
     api_base_url: str = "",
     http_status: int | None = None,
     raw_text_preview: str = "",
+    env_files_loaded: list[str] | None = None,
 ) -> dict[str, object]:
     record: dict[str, object] = {
         "status": status,
@@ -385,6 +419,7 @@ def vision_record(
         "result": normalize_vision_result(result),
         "error_type": error_type,
         "message": message,
+        "env_files_loaded": env_files_loaded or [],
     }
     if http_status is not None:
         record["http_status"] = http_status
@@ -1414,6 +1449,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
     if not image_path.exists() or not image_path.is_file():
         raise SystemExit(f"Image file not found: {image_path}")
     image_mime_type(image_path)
+    loaded_env_files = load_env_files(root, args.env_file)
 
     started_at = now_text()
     start = time.monotonic()
@@ -1443,6 +1479,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
                 "confidence": "low",
             },
             message="mock mode: no external API call was made",
+            env_files_loaded=loaded_env_files,
         )
         emit_json_result(record, args.out)
         return 0
@@ -1461,6 +1498,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
             elapsed_ms=int((time.monotonic() - start) * 1000),
             error_type="missing_api_key",
             message=f"environment variable {args.api_key_env} is not set",
+            env_files_loaded=loaded_env_files,
         )
         emit_json_result(record, args.out)
         return 2
@@ -1477,6 +1515,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
             elapsed_ms=int((time.monotonic() - start) * 1000),
             error_type="missing_model",
             message="set --model or PENTS_VISION_MODEL",
+            env_files_loaded=loaded_env_files,
         )
         emit_json_result(record, args.out)
         return 2
@@ -1511,6 +1550,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
             message=str(exc),
             http_status=exc.code,
             raw_text_preview=error_body,
+            env_files_loaded=loaded_env_files,
         )
         emit_json_result(record, args.out)
         return 2
@@ -1527,6 +1567,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
             elapsed_ms=int((time.monotonic() - start) * 1000),
             error_type="api_timeout_or_network_error",
             message=str(exc),
+            env_files_loaded=loaded_env_files,
         )
         emit_json_result(record, args.out)
         return 2
@@ -1544,6 +1585,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
             error_type="invalid_api_or_model_json",
             message=str(exc),
             raw_text_preview=raw_preview,
+            env_files_loaded=loaded_env_files,
         )
         emit_json_result(record, args.out)
         return 2
@@ -1560,6 +1602,7 @@ def cmd_vision_review(args: argparse.Namespace) -> int:
         elapsed_ms=int((time.monotonic() - start) * 1000),
         result=model_result,
         http_status=http_status,
+        env_files_loaded=loaded_env_files,
     )
     emit_json_result(record, args.out)
     return 0
@@ -2242,6 +2285,7 @@ def build_parser() -> argparse.ArgumentParser:
     vision_parser.add_argument("--base-url", default="", help="OpenAI-compatible base URL; defaults to PENTS_VISION_BASE_URL or OpenAI")
     vision_parser.add_argument("--model", default="", help="vision model; defaults to PENTS_VISION_MODEL")
     vision_parser.add_argument("--api-key-env", default="PENTS_VISION_API_KEY", help="environment variable that stores the API key")
+    vision_parser.add_argument("--env-file", default="", help="load env vars from this file; defaults to .env and .env.local")
     vision_parser.add_argument("--timeout", type=int, default=30)
     vision_parser.add_argument("--max-tokens", type=int, default=1600)
     vision_parser.add_argument(

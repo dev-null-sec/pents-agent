@@ -77,10 +77,18 @@
 调用示例：
 
 ```text
-uv run --project cli pents vision-review projects/hiwonder-cn-canary/runs/R002-2026-06-04-mimo-vision-canary/outputs/browser/screenshots/admin_hiwonder_2026-06-04.png --question "判断截图里是否出现登录页、验证码/滑块/WAF 挑战、可见交互元素和敏感信息" --base-url https://token-plan-cn.xiaomimimo.com/v1 --model mimo-v2.5 --out projects/hiwonder-cn-canary/runs/R002-2026-06-04-mimo-vision-canary/outputs/browser/visual-reviews/vision-review-001.json
+uv run --project cli pents vision-review projects/hiwonder-cn-canary/runs/R002-2026-06-04-mimo-vision-canary/outputs/browser/screenshots/admin_hiwonder_2026-06-04.png --question "判断截图里是否出现登录页、验证码/滑块/WAF 挑战、可见交互元素和敏感信息" --out projects/hiwonder-cn-canary/runs/R002-2026-06-04-mimo-vision-canary/outputs/browser/visual-reviews/vision-review-001.json
 ```
 
-API key 只允许通过环境变量读取，例如 `PENTS_VISION_API_KEY`；base URL 如需配置，使用 `PENTS_VISION_BASE_URL` 或 `--base-url`。不得把 key 写进任务卡、命令历史、日志或报告。
+API key 只允许通过本地 `.env` / `.env.local` 或环境变量读取，例如：
+
+```text
+PENTS_VISION_API_KEY=<本地填写>
+PENTS_VISION_BASE_URL=https://token-plan-cn.xiaomimimo.com/v1
+PENTS_VISION_MODEL=mimo-v2.5
+```
+
+不得把 key 写进任务卡、命令历史、日志或报告。真实 `.env` 不入 git；仓库只保留 `.env.example`。
 
 如果 CLI 返回 `missing_api_key`、`missing_model`、`api_timeout_or_network_error` 或其他错误，记录 blocker 并停止视觉判断，不要改用 Claude Code 内置视觉子代理反复尝试。
 
