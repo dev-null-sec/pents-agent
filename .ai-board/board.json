@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 56,
+  "next_id": 58,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T07:07:27+00:00",
+  "updated_at": "2026-06-04T07:20:47+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -126,6 +126,57 @@
       "leftovers": "",
       "created_at": "2026-06-04T06:28:47+00:00",
       "updated_at": "2026-06-04T06:28:47+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0056",
+      "title": "对 hiwonder 管理页执行 agent-browser 视觉 canary 测试",
+      "description": "目标 URL：https://www.hiwonder.com.cn/admin_hiwonder.php/。本任务用于验证 Claude Code + agent-browser + 视觉子代理 fallback 链路，不做漏洞测试、不尝试登录、不绕过验证码、不提交表单、不爆破、不访问范围外跳转。前置条件：用户确认该外部目标允许进行仅浏览/截图/视觉识别 canary，或将目标替换为自有测试页面。",
+      "priority": "P1",
+      "status": "scheduled",
+      "lane": "模型能力验证",
+      "source": "user",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "生成 Claude Code 可读的短任务卡：主 agent 使用 agent-browser 打开页面、snapshot、保存截图；若 snapshot 无法判断页面视觉状态，则自动调用 model: haiku 的 vision-reviewer 子代理识别截图。",
+        "执行时只允许读取公开页面、保存截图、识别页面是否为登录页/是否存在验证码或明显视觉元素；禁止输入账号密码、提交表单、绕过验证码或做漏洞 payload。",
+        "结果回填 run 记录：页面 URL、截图路径、snapshot 摘要、视觉子代理输出、是否支持图片识别、blocker/next_steps；如果缺授权或 haiku 映射模型不能读图，记录 blocker。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T07:20:04+00:00",
+      "updated_at": "2026-06-04T07:20:47+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0057",
+      "title": "设计 browser-test-agent 自动视觉子代理 fallback 机制",
+      "description": "让主 agent 在浏览器测试中自动判断何时需要视觉识别，而不是每次由用户在任务卡手写。建议以 skill/任务流程规则为主，CLI 仅负责生成模板、doctor 检查和结果合并。",
+      "priority": "P1",
+      "status": "scheduled",
+      "lane": "代理协作能力",
+      "source": "user",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "更新 browser-test-agent 流程：定义 text-only 主 agent 的可做/不可做边界，以及触发 vision-reviewer 的条件，如 snapshot 信息不足、canvas/图片页面、验证码/Turnstile、截图脱敏、视觉布局判断。",
+        "定义 vision-reviewer 子代理模板：model: haiku，输入为截图路径和窄问题，输出结构化 JSON；如果模型不能读取图片，必须返回 blocker，不允许猜测。",
+        "规划 CLI 辅助项：pents brief 可生成视觉 fallback 字段，pents doctor-models 或 doctor-browser 可检查 haiku 映射和图片 canary；不把视觉判断逻辑硬塞进 CLI。",
+        "同步 templates/browser-test-agent-brief.md、docs/项目路线/browser-test-agent流程.md、docs/项目路线/模板与数据结构.md 和 docs/当前状态.md。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T07:20:19+00:00",
+      "updated_at": "2026-06-04T07:20:47+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
