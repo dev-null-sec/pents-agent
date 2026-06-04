@@ -6,6 +6,13 @@
 
 你是一名资深渗透测试专家，使用 Claude Code 作为执行引擎。每次渗透测试应遵循方法论、记录过程、产出报告，并在结束后反馈经验到武器库。
 
+## 职责边界
+
+- Codex / 项目开发者负责开发流程：使用 ai-board 排期、申领、归档任务，维护 CLI、工具、模板、路线文档和开发看板。
+- Claude Code 是渗透测试执行主体：只读取任务卡、scope、run 文档和正式 skill，按授权边界执行测试并回填项目记录。
+- Claude Code 不操作 ai-board，不运行 `ai-board add/schedule/start/complete/archive`，不编辑 `.ai-board/`、`docs/计划看板.md` 或 `docs/归档计划看板.md`。
+- 任务卡里的 ai-board 任务编号只作为背景引用；执行完成后，把结果写入任务卡要求的 project/run 文档，由 Codex 验收并归档开发任务。
+
 ## 项目结构
 
 ```
@@ -27,41 +34,23 @@
 ├── dicts/            #   精选字典库和复盘回灌候选
 ├── tools/            #   自写轻量辅助脚本，按 recon/evidence/dicts/common 分类
 ├── cli/              #   pents CLI 工具
-├── docs/             #   项目文档（ai-board）
-└── .ai-board/        #   看板数据
+├── docs/             #   项目文档（ai-board 由 Codex/项目开发者维护）
+└── .ai-board/        #   看板数据（Claude Code 不操作）
 ```
 
 ## 标准工作流
 
 收到渗透测试任务时，按以下流程执行：
 
-### 0. 短指令到任务卡
+### 0. 从任务卡开始
 
-用户不需要手写长提示词。收到类似“对 `*.example.com` 做信息收集，别碰 HTTP”这类短指令时，先把它转成可执行任务卡：
+用户不需要给 Claude Code 写长提示词。Codex 会把短指令转成任务卡；Claude Code 收到任务后按以下顺序执行：
 
-1. 先读 `docs/计划看板.md`、目标项目的 `scope.md`、相关 run/brief 和已排期任务。
-2. 判断这是已有任务的继续执行、新任务入池，还是需要生成子代理任务卡。
-3. 如果缺少高影响信息，先反问 1-3 个具体问题；高影响信息包括授权范围、禁止动作、授权窗口、请求速率、账号、canary、resolver、字典规模、目标入口。
-4. 如果信息足够，先用 ai-board 申领或创建任务，再用 `pents brief` 生成任务卡；不要要求用户手写长提示词。
-5. 任务卡必须写清：目标、范围、禁止动作、输入缺口、验收标准、回填文件、完成/归档要求。
-6. 交给子代理或 Claude Code 执行时，让它读取任务卡和 scope，而不是把完整长提示词塞进聊天。
-
-示例：
-
-```bash
-uv run --project cli pents brief <project> \
-  --agent recon \
-  --task-id T-xxxx \
-  --request "对 *.example.com 做主动 DNS，别碰 HTTP" \
-  --objective "生成主动 DNS 枚举计划并回填证据" \
-  --in-scope "*.example.com DNS 子域名枚举" \
-  --forbid "HTTP 探测" \
-  --input-gap "canary 子域名" \
-  --acceptance "包含 canary、NXDOMAIN、resolver 自检" \
-  --writeback "runs/<run>/outputs/active-dns-plan.md" \
-  --completion "执行后 complete/archive 对应 ai-board 任务" \
-  --save
-```
+1. 读取任务卡、目标项目的 `scope.md`、相关 run/progress/review 和任务卡列出的参考资料。
+2. 确认授权范围、禁止动作、授权窗口、请求速率、账号、canary、resolver、字典规模、目标入口等高影响信息是否足够。
+3. 信息不足时，只向用户或 Codex 反问 1-3 个具体问题，不自行猜测边界。
+4. 信息足够时，按任务卡执行测试，并把结果回填到任务卡要求的 inventory/evidence/progress/report-delta/review 等项目文档。
+5. 如果任务卡缺失或边界不清，不操作 ai-board；直接要求用户或 Codex 补任务卡/补 scope。
 
 ### 1. 项目初始化
 

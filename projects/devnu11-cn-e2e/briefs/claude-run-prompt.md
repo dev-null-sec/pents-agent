@@ -1,4 +1,4 @@
-请执行 ai-board 任务 `T-0008：由 Claude Code 执行端到端靶场验证`。
+请执行端到端靶场验证任务。历史任务编号 `T-0008` 仅作为背景引用；不要操作 ai-board。
 
 重要边界：
 
@@ -12,7 +12,6 @@
 
 - `AGENTS.md`
 - `CLAUDE.md`
-- `docs/计划看板.md`
 - `docs/当前状态.md`
 - `projects/devnu11-cn-e2e/scope.md`
 - `projects/devnu11-cn-e2e/briefs/claude-e2e.md`
@@ -34,7 +33,6 @@
 
 结束时：
 
-- 用 `ai-board complete T-0008 --verification "...中文摘要..." --leftovers "...中文摘要或无"` 完成任务。
-- 然后 `ai-board archive T-0008`。
+- 只回填 `projects/devnu11-cn-e2e/` 下的 progress、inventory、evidence、report、review 等项目记录。
+- 不运行 ai-board 命令；ai-board 验收和归档由 Codex / 项目开发者处理。
 - 如果因为授权窗口、请求速率、账号或外部条件无法继续，不要擅自扩大测试；请记录 blocker 并停止。
-

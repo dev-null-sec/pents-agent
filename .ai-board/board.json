@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 48,
+  "next_id": 49,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T02:36:48+00:00",
+  "updated_at": "2026-06-04T02:57:51+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T02:36:41+00:00",
+      "updated_at": "2026-06-04T02:57:31+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T02:36:41+00:00"
+      "released_at": "2026-06-04T02:57:31+00:00"
     },
     {
       "id": "claude-code",
@@ -111,10 +111,10 @@
       "title": "由 Claude Code 正式执行 devnu11 主动 DNS 子域名枚举",
       "description": "",
       "priority": "P0",
-      "status": "active",
+      "status": "blocked",
       "lane": "默认",
       "source": "",
-      "owner_agent": "claude-code",
+      "owner_agent": "codex",
       "scope": [
         "docs/当前状态.md",
         "projects/devnu11-cn-e2e"
@@ -128,11 +128,12 @@
       "deferred_verification": "",
       "leftovers": "",
       "created_at": "2026-06-03T08:08:33+00:00",
-      "updated_at": "2026-06-03T08:36:28+00:00",
-      "lock_owner": "claude-code",
-      "lease_expires_at": "2026-06-03T12:36:28+00:00",
-      "locked_at": "2026-06-03T08:36:28+00:00",
-      "started_at": "2026-06-03T08:36:28+00:00"
+      "updated_at": "2026-06-04T02:55:44+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T02:54:44+00:00",
+      "started_at": "2026-06-03T08:36:28+00:00",
+      "unlocked_at": "2026-06-04T02:55:28+00:00"
     }
   ],
   "archive": [
@@ -1753,6 +1754,42 @@
       "started_at": "2026-06-04T02:19:55+00:00",
       "completed_at": "2026-06-04T02:36:41+00:00",
       "archived_at": "2026-06-04T02:36:48+00:00"
+    },
+    {
+      "id": "T-0048",
+      "title": "明确 Codex 与 Claude Code 的职责边界",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "CLAUDE.md",
+        "docs/当前状态.md",
+        "docs/项目路线/短指令任务卡流程.md",
+        "projects/devnu11-cn-e2e/briefs/claude-run-prompt.md",
+        "projects/devnu11-cn-e2e/briefs/claude-t0042-active-dns.md",
+        "templates/brief.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "CLAUDE.md 和当前任务卡明确 Claude Code 不操作 ai-board；ai-board 只由 Codex/项目开发者用于开发计划；CC 只读取 scope/brief/run 文档并按渗透流程执行、回填项目记录；短指令任务卡流程不再要求执行 agent complete/archive ai-board。"
+      ],
+      "verification": "uv run --project cli python -X utf8 -m unittest discover -s tests 通过 13 个测试；rg 检查 CLAUDE.md/docs/templates/devnu11 briefs 中已无要求 Claude Code 运行 ai-board start/complete/archive 的命令；T-0042 看板状态已调整为 blocked、owner=codex，表示等待外部 CC 复测结果，由 Codex 负责 ai-board 验收。",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-04T02:46:10+00:00",
+      "updated_at": "2026-06-04T02:57:51+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T02:56:26+00:00",
+      "started_at": "2026-06-04T02:56:26+00:00",
+      "completed_at": "2026-06-04T02:57:31+00:00",
+      "reopened_at": "2026-06-04T02:56:05+00:00",
+      "reopen_reason": "T-0042 owner/blocker state adjusted after initial completion; refresh verification and leftovers",
+      "archived_at": "2026-06-04T02:57:51+00:00"
     }
   ]
 }

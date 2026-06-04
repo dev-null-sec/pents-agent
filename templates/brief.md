@@ -60,6 +60,8 @@
 
 {{completion_items}}
 
+执行 agent 只回填项目记录，不操作 ai-board；ai-board 验收和归档由 Codex / 项目开发者处理。
+
 ## 输出要求
 
 返回结构化输出，必须包含：
