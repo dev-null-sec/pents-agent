@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 63,
+  "next_id": 65,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T10:36:15+00:00",
+  "updated_at": "2026-06-04T11:20:07+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T10:36:15+00:00",
+      "updated_at": "2026-06-04T11:20:07+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T10:36:15+00:00"
+      "released_at": "2026-06-04T11:20:07+00:00"
     },
     {
       "id": "claude-code",
@@ -2273,6 +2273,74 @@
       "started_at": "2026-06-04T10:28:36+00:00",
       "completed_at": "2026-06-04T10:36:15+00:00",
       "archived_at": "2026-06-04T10:36:15+00:00"
+    },
+    {
+      "id": "T-0063",
+      "title": "发布前公开化准备第一批",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "发布准备",
+      "source": "user",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "完成公开发布清单、README 中英文公开口径、安全/免责声明、贡献入口和本地公开审计记录",
+        "README 不暴露真实授权目标、测试账号或 API key；仓库仍明确只允许授权测试",
+        "验证 git 跟踪文件中无 .env/API key、关键发布文档链接存在，未创建远程仓库或推送"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T11:03:25+00:00",
+      "updated_at": "2026-06-04T11:13:30+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "archived_at": "2026-06-04T11:13:30+00:00"
+    },
+    {
+      "id": "T-0064",
+      "title": "发布到 dev-null-sec/pents-agent 前清理与推送",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "发布准备",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        ".ai-board/board.json",
+        ".ai-board/events.jsonl",
+        "CONTRIBUTING.md",
+        "DISCLAIMER.md",
+        "LICENSE",
+        "README.md",
+        "README_en.md",
+        "SECURITY.md",
+        "docs/归档计划看板.md",
+        "docs/当前状态.md",
+        "docs/计划看板.md",
+        "projects/devnu11-cn-e2e/runs/README.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "不重写项目本体 README 和模块 README，只轻量补充免责声明/安全边界；测试项目 README 做脱敏处理",
+        "确认 GitHub active 账号为 dev-null-sec，仓库协作者只包含 dev-null-sec；设置远程并推送到 https://github.com/dev-null-sec/pents-agent",
+        "验证 tracked 文件中无 .env/API key，真实测试项目 README 已脱敏，工作区提交干净"
+      ],
+      "verification": "已确认 GitHub active 账号为 dev-null-sec，Hiwonder 账号非 active；SSH 推送曾走到 Hiwonder 被拒绝，已切换 origin 为 https://github.com/dev-null-sec/pents-agent.git 并使用 dev-null-sec 的 gh token 推送成功；gh repo view 确认仓库 dev-null-sec/pents-agent 为 public、viewerPermission=ADMIN、defaultBranch=master；gh collaborators 确认协作者列表只有 dev-null-sec；README/README_en 仅轻量补充免责声明/安全策略/贡献入口并替换真实目标示例，Mermaid 复盘图保留关键反问；projects/devnu11-cn-e2e/runs/README.md 已脱敏；新增 DISCLAIMER.md、SECURITY.md、CONTRIBUTING.md、LICENSE；rg 检查公开入口文件无真实目标/账号/token；git diff --check 通过；uv run --project cli python -m unittest discover -s cli/tests 通过",
+      "deferred_verification": "",
+      "leftovers": "历史 docs 和 projects 中仍保留真实授权测试过程记录；本轮按用户要求只处理项目本体 README 的轻量公开补丁和测试项目 README 脱敏，如后续要完全公开样例化，可单独排期清理 projects/ 与历史归档文档",
+      "created_at": "2026-06-04T11:06:32+00:00",
+      "updated_at": "2026-06-04T11:20:07+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T11:07:24+00:00",
+      "started_at": "2026-06-04T11:06:51+00:00",
+      "completed_at": "2026-06-04T11:20:07+00:00",
+      "archived_at": "2026-06-04T11:20:07+00:00"
     }
   ]
 }
