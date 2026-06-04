@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 52,
+  "next_id": 55,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T04:04:41+00:00",
+  "updated_at": "2026-06-04T06:28:47+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -105,6 +105,73 @@
       "updated_at": "2026-06-03T02:33:34+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
+    },
+    {
+      "id": "T-0052",
+      "title": "设计资产图谱模型与入口卡片模板",
+      "description": "",
+      "priority": "P1",
+      "status": "inbox",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "定义资产图谱核心实体和关系：domain/subdomain/ip/url/service/app/fingerprint/api/evidence/risk；设计可读的入口卡片模板，能表达存活状态、技术栈、登录注册、API、交互点、高价值测试点和授权状态；明确 pents/模板/项目文档如何记录和合并。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T06:28:27+00:00",
+      "updated_at": "2026-06-04T06:28:27+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0053",
+      "title": "设计 browser-test-agent 任务卡与证据回填流程",
+      "description": "",
+      "priority": "P1",
+      "status": "inbox",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "围绕 agent-browser 设计浏览器交互测试任务卡：登录/注册/表单/导航/截图/状态保持/证据采集；明确 Claude Code 使用 agent-browser 执行、pents 负责记录和合并；输出需包含截图、关键请求/响应摘要、交互步骤、停止条件和 finding 候选回填。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T06:28:37+00:00",
+      "updated_at": "2026-06-04T06:28:37+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0054",
+      "title": "建立源站线索分级与授权策略",
+      "description": "",
+      "priority": "P1",
+      "status": "inbox",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "把源站相关动作分为默认允许的被动线索、需要单独确认的低频验证、默认禁止的高风险手段三层；覆盖历史 DNS、证书、favicon、测绘搜索、Host 绑定验证、端口扫描、源站 IP 直连等场景；同步到 scope/brief/recon skill 或路线文档，确保 Claude Code 不会越权执行源站验证。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T06:28:47+00:00",
+      "updated_at": "2026-06-04T06:28:47+00:00"
     }
   ],
   "archive": [
