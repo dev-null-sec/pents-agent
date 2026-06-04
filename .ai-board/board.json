@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 61,
+  "next_id": 62,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T08:26:02+00:00",
+  "updated_at": "2026-06-04T09:33:13+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T08:25:48+00:00",
+      "updated_at": "2026-06-04T09:33:05+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T08:25:48+00:00"
+      "released_at": "2026-06-04T09:33:05+00:00"
     },
     {
       "id": "claude-code",
@@ -2167,6 +2167,45 @@
       "started_at": "2026-06-04T08:22:45+00:00",
       "completed_at": "2026-06-04T08:25:48+00:00",
       "archived_at": "2026-06-04T08:26:02+00:00"
+    },
+    {
+      "id": "T-0061",
+      "title": "建立独立 vision-review CLI 适配层",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "代理协作能力",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "cli/src/pents/cli.py",
+        "cli/tests/test_vision_review.py",
+        "docs/当前状态.md",
+        "docs/项目路线/browser-test-agent流程.md",
+        "projects/hiwonder-cn-canary/briefs/claude-t0058-mimo-vision-canary.md",
+        "projects/hiwonder-cn-canary/runs/R002-2026-06-04-mimo-vision-canary",
+        "skills/recon/browser-test-agent/SKILL.md",
+        "templates/browser-test-agent-brief.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "新增 pents vision-review：输入本地截图路径和窄问题，输出结构化 JSON",
+        "API key 仅从环境变量读取，支持 OpenAI-compatible base_url/model 配置，不写入日志或报告",
+        "支持 mock 模式、超时、错误 JSON 输出，避免 CC 子代理读图卡死",
+        "browser-test-agent 任务卡口径更新为优先调用 CLI 读取图片结果"
+      ],
+      "verification": "uv run --project cli python -m unittest discover -s cli/tests 通过；pents vision-review --mock 通过；真实 API canary：token-plan-cn + mimo-v2.5 读图成功并保存 JSON；mimo-v2.5-pro 图片入口 404、官方 api.xiaomimimo.com 使用当前 token 401 已记录；rg 确认 API token 未落盘；git diff --check 通过；ai-board conflicts 无冲突",
+      "deferred_verification": "",
+      "leftovers": "后续可继续补 pents evidence 自动登记 vision-review 输出；agent-browser MCP 可用性仍需单独确认",
+      "created_at": "2026-06-04T09:07:51+00:00",
+      "updated_at": "2026-06-04T09:33:13+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T09:28:43+00:00",
+      "started_at": "2026-06-04T09:08:21+00:00",
+      "completed_at": "2026-06-04T09:33:05+00:00",
+      "archived_at": "2026-06-04T09:33:13+00:00"
     }
   ]
 }

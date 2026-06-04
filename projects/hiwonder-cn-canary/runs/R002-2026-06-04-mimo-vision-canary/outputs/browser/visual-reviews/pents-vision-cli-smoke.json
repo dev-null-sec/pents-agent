@@ -1,0 +1,36 @@
+{
+  "status": "error",
+  "mode": "api",
+  "provider": "openai-compatible",
+  "model": "mimo-v2.5-pro",
+  "api_base_url": "https://token-plan-cn.xiaomimimo.com/v1",
+  "started_at": "2026-06-04 17:16:34",
+  "elapsed_ms": 3406,
+  "question": "判断截图里是否出现后台登录页、验证码或验证组件、可见交互元素和敏感信息；只输出 JSON",
+  "image": {
+    "path": "D:\\Backup\\Documents\\pentest智能体\\projects\\hiwonder-cn-canary\\runs\\R001-2026-06-04-vision-canary\\outputs\\browser\\screenshots\\admin_hiwonder_2026-06-04.png",
+    "sha256": "53d1265d9fce636c489f08e08d4898e83af96e637ac95635ece4e0bbb707b141",
+    "mime_type": "image/png",
+    "bytes": 222152
+  },
+  "result": {
+    "can_read_image": false,
+    "blocker": "",
+    "page_type": "",
+    "captcha_or_waf": {
+      "present": null,
+      "type": "",
+      "evidence": ""
+    },
+    "visible_interactive_elements": [],
+    "sensitive_content": {
+      "present": null,
+      "description": ""
+    },
+    "confidence": "low"
+  },
+  "error_type": "api_http_error",
+  "message": "HTTP Error 404: Not Found",
+  "http_status": 404,
+  "raw_text_preview": "{\"error\":{\"code\":\"404\",\"message\":\"No endpoints found that support image input\",\"param\":\"\",\"type\":\"\"}}"
+}

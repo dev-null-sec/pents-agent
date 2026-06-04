@@ -1,6 +1,6 @@
 ---
 name: browser-test-agent
-description: 使用 agent-browser 在授权范围内执行浏览器交互验证，并在需要视觉判断时自动调用 vision-reviewer 子代理。
+description: 使用 agent-browser 在授权范围内执行浏览器交互验证，并在需要视觉判断时调用 pents vision-review 生成结构化视觉复核结果。
 category: recon
 source: project
 tags:
@@ -42,7 +42,7 @@ required_tools:
 - 已读取 `scope.md`、`inventory.md`、相关入口卡片、当前 run 的 `brief.md` 和 `docs/项目路线/browser-test-agent流程.md`。
 - 本机可运行 `agent-browser skills get core`，并已理解 `open -> snapshot -i -> act -> wait -> snapshot -i` 的循环。
 - 已准备 run 目录下的 `outputs/browser/screenshots/`、`outputs/browser/snapshots/`、`outputs/browser/network-summary.md` 和 `raw/browser/`。
-- 如果需要视觉判断，项目应提供或生成 `vision-reviewer` 子代理定义；推荐 `model: haiku`，但必须以实际 canary 结果确认该映射模型是否支持图片输入。
+- 如果需要视觉判断，优先调用 `uv run --project cli pents vision-review <screenshot> --question <窄问题> --out <json>`；API key 只允许通过环境变量读取，不能写入任务卡、日志或报告。
 
 ## 执行步骤
 
@@ -64,11 +64,11 @@ required_tools:
 - 网络请求列表和关键请求摘要。
 - 可见文本、表单字段、按钮文案和错误提示。
 
-如果这些信息足够判断页面状态，不调用视觉子代理。
+如果这些信息足够判断页面状态，不调用视觉复核。
 
-### 步骤 3：自动判断是否需要 vision-reviewer
+### 步骤 3：自动判断是否需要视觉复核
 
-出现以下任一情况，主 agent 应主动调用 `vision-reviewer`，不等待用户提醒：
+出现以下任一情况，主 agent 应主动调用 `pents vision-review`，不等待用户提醒：
 
 - `snapshot` 信息为空、过少，或页面主体疑似 canvas、图片、SVG、视频、WebGL 渲染。
 - 页面存在验证码、Cloudflare Turnstile、滑块、二维码、图形验证码或 WAF 挑战状态，需要判断是否出现。
@@ -76,17 +76,19 @@ required_tools:
 - UI 布局、遮挡、弹窗、按钮可见性、标注截图是否准确，无法仅凭文本判断。
 - `agent-browser screenshot --annotate` 产物需要确认编号、框选或标签是否遮挡关键内容。
 
-触发视觉判断前，必须先做文本回退：`snapshot -i` 为空时先尝试 `snapshot --full`。如果 `snapshot --full` 已能说明页面状态，优先使用文本证据，并把未调用视觉子代理的原因写入 run 记录。
+触发视觉判断前，必须先做文本回退：`snapshot -i` 为空时先尝试 `snapshot --full`。如果 `snapshot --full` 已能说明页面状态，优先使用文本证据，并把未调用视觉复核的原因写入 run 记录。
 
-调用时只给 `vision-reviewer` 一个窄问题，例如：
+调用时只给 CLI 一个窄问题，例如：
 
 ```text
-请只查看这张截图，判断页面是否出现验证码或 Turnstile。不要推测漏洞，不要访问网络。
+uv run --project cli pents vision-review runs/Rxxx/outputs/browser/screenshots/page.png --question "这张截图里是否出现验证码或 Turnstile？" --out runs/Rxxx/outputs/browser/visual-reviews/page.json
 ```
 
-### 步骤 4：处理视觉子代理结果
+如果 `pents vision-review` 返回 `missing_api_key`、`missing_model`、`api_timeout_or_network_error` 或其他错误，记录 blocker，不再改用 Claude Code 内置视觉子代理反复尝试，除非任务卡明确要求做模型链路对比 canary。
 
-- 如果 `vision-reviewer` 返回 `can_read_image=false`，记录 blocker：`model_no_image_input`，不要猜测截图内容。
+### 步骤 4：处理视觉复核结果
+
+- 如果 `pents vision-review` 返回 `can_read_image=false`，记录 blocker，不要猜测截图内容。
 - 如果视觉结果与 snapshot 冲突，优先记录不确定点，必要时重新截图或停止。
 - 如果视觉结果提示验证码、风控或 WAF 挑战，不尝试绕过，按停止条件处理。
 - 视觉结果只能作为页面状态或证据质量判断，不能单独确认漏洞。
@@ -105,7 +107,7 @@ required_tools:
 - 需要账号、管理员权限、OAuth、支付、上传、写入或提交表单，但任务卡未授权。
 - 出现验证码、Turnstile、风控升级、频繁 429/403、连续 5xx 或明显业务异常。
 - 响应或截图包含敏感数据、凭据、个人信息或生产数据。
-- `vision-reviewer` 不能读取图片，而当前判断必须依赖视觉内容。
+- `pents vision-review` 不能读取图片，而当前判断必须依赖视觉内容。
 - 任务目标是外部第三方站点，但没有明确授权，仅能记录待授权 blocker。
 
 ## 输出格式
@@ -131,7 +133,7 @@ required_tools:
 ## 验收标准
 
 1. 已按 `agent-browser` 快照循环完成页面观察，并保存截图或明确记录无法截图原因。
-2. 已判断是否需要视觉子代理；触发或未触发的原因写入 run 记录。
-3. 如调用 `vision-reviewer`，已保存结构化输出，并在不能读图时记录 blocker。
+2. 已判断是否需要视觉复核；触发或未触发的原因写入 run 记录。
+3. 如调用 `pents vision-review`，已保存结构化输出，并在不能读图或 API 失败时记录 blocker。
 4. 已回填入口卡片、evidence、progress、report-delta 和 review 中与本轮有关的内容。
 5. 未越过授权边界，未尝试绕过验证码或风控，未把视觉猜测写成 confirmed finding。

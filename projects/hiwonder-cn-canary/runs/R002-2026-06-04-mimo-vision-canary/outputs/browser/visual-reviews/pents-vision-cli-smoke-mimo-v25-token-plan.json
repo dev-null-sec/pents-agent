@@ -1,0 +1,41 @@
+{
+  "status": "ok",
+  "mode": "api",
+  "provider": "openai-compatible",
+  "model": "mimo-v2.5",
+  "api_base_url": "https://token-plan-cn.xiaomimimo.com/v1",
+  "started_at": "2026-06-04 17:26:47",
+  "elapsed_ms": 14877,
+  "question": "判断截图里是否出现后台登录页、验证码或验证组件、可见交互元素和敏感信息；按要求字段输出 JSON",
+  "image": {
+    "path": "D:\\Backup\\Documents\\pentest智能体\\projects\\hiwonder-cn-canary\\runs\\R001-2026-06-04-vision-canary\\outputs\\browser\\screenshots\\admin_hiwonder_2026-06-04.png",
+    "sha256": "53d1265d9fce636c489f08e08d4898e83af96e637ac95635ece4e0bbb707b141",
+    "mime_type": "image/png",
+    "bytes": 222152
+  },
+  "result": {
+    "can_read_image": true,
+    "blocker": "none",
+    "page_type": "backend_login",
+    "captcha_or_waf": {
+      "present": true,
+      "type": "captcha",
+      "evidence": ""
+    },
+    "visible_interactive_elements": [
+      "username_input",
+      "password_input",
+      "captcha_input",
+      "remember_session_checkbox",
+      "login_button"
+    ],
+    "sensitive_content": {
+      "present": null,
+      "description": ""
+    },
+    "confidence": 1.0
+  },
+  "error_type": "",
+  "message": "",
+  "http_status": 200
+}

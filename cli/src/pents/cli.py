@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
+import mimetypes
+import os
 import platform
 import re
 import shutil
 import sys
+import time
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -126,6 +132,22 @@ SKILL_ALIASES = {
     "jwt-none-attack": "jwt none token signature api 签名",
     "rate-limit-bypass": "rate limit bypass api brute force 速率 限流",
 }
+VISION_RESULT_DEFAULTS = {
+    "can_read_image": False,
+    "blocker": "",
+    "page_type": "",
+    "captcha_or_waf": {
+        "present": None,
+        "type": "",
+        "evidence": "",
+    },
+    "visible_interactive_elements": [],
+    "sensitive_content": {
+        "present": None,
+        "description": "",
+    },
+    "confidence": "low",
+}
 
 
 def now_text() -> str:
@@ -167,6 +189,216 @@ def file_sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def file_size(path: Path) -> int:
+    return path.stat().st_size
+
+
+def image_mime_type(path: Path) -> str:
+    guessed, _ = mimetypes.guess_type(str(path))
+    if guessed and guessed.startswith("image/"):
+        return guessed
+    suffix = path.suffix.lower()
+    if suffix == ".jpg":
+        return "image/jpeg"
+    if suffix in {".png", ".jpeg", ".webp", ".gif"}:
+        return f"image/{suffix.lstrip('.')}"
+    raise SystemExit(f"Unsupported image type: {path.suffix or '(no extension)'}")
+
+
+def image_data_url(path: Path) -> str:
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{image_mime_type(path)};base64,{encoded}"
+
+
+def openai_compatible_endpoint(base_url: str) -> str:
+    value = base_url.rstrip("/")
+    if value.endswith("/chat/completions"):
+        return value
+    return value + "/chat/completions"
+
+
+def deep_copy_json(value: dict[str, object]) -> dict[str, object]:
+    return json.loads(json.dumps(value, ensure_ascii=False))
+
+
+def normalize_vision_result(value: dict[str, object] | None) -> dict[str, object]:
+    result = deep_copy_json(VISION_RESULT_DEFAULTS)
+    if value:
+        if "can_read_image" not in value and "blocker" not in value:
+            result["can_read_image"] = True
+        if value.get("后台登录页") is True:
+            result["page_type"] = "后台登录页"
+        if "验证码或验证组件" in value:
+            captcha = result.get("captcha_or_waf")
+            if isinstance(captcha, dict):
+                captcha["present"] = value.get("验证码或验证组件")
+                captcha["type"] = "验证码或验证组件" if value.get("验证码或验证组件") else ""
+        if "敏感信息" in value:
+            sensitive = result.get("sensitive_content")
+            if isinstance(sensitive, dict):
+                sensitive["present"] = value.get("敏感信息")
+        if value.get("可见交互元素") is True:
+            result["visible_interactive_elements"] = ["存在可见交互元素"]
+        for key, item in value.items():
+            if key in {"captcha_or_waf", "sensitive_content"} and isinstance(item, dict):
+                nested = result.get(key)
+                if isinstance(nested, dict):
+                    nested.update(item)
+                continue
+            result[key] = item
+    for key in ("captcha_or_waf", "sensitive_content"):
+        if not isinstance(result.get(key), dict):
+            result[key] = deep_copy_json(VISION_RESULT_DEFAULTS)[key]
+    if not isinstance(result.get("visible_interactive_elements"), list):
+        result["visible_interactive_elements"] = [str(result["visible_interactive_elements"])]
+    visible_text = " ".join(str(item).lower() for item in result.get("visible_interactive_elements", []))
+    captcha = result.get("captcha_or_waf")
+    if isinstance(captcha, dict) and captcha.get("present") is None and "captcha" in visible_text:
+        captcha["present"] = True
+        captcha["type"] = captcha.get("type") or "captcha"
+    return result
+
+
+def vision_system_prompt() -> str:
+    return (
+        "你是截图视觉复核器。只看用户提供的截图，不访问网络，不推测漏洞。"
+        "请只输出 JSON object。推荐字段：can_read_image, blocker, page_type, captcha_or_waf, "
+        "visible_interactive_elements, sensitive_content, confidence。"
+    )
+
+
+def vision_user_text(question: str, context: list[str]) -> str:
+    lines = [
+        "请只根据截图回答这个窄问题。",
+        f"问题：{question}",
+    ]
+    if context:
+        lines.append("必要上下文：")
+        lines.extend(f"- {item}" for item in context)
+    lines.append("不要推测漏洞，不要构造 payload，不要访问网络。")
+    return "\n".join(lines)
+
+
+def build_vision_payload(args: argparse.Namespace, image_url: str) -> dict[str, object]:
+    token_param = args.token_param or "max_tokens"
+    payload: dict[str, object] = {
+        "model": args.model,
+        "messages": [
+            {"role": "system", "content": vision_system_prompt()},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": vision_user_text(args.question, args.context)},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ],
+            },
+        ],
+        "temperature": 0,
+        token_param: args.max_tokens,
+    }
+    if args.json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    return payload
+
+
+def post_json(url: str, payload: dict[str, object], api_key: str, timeout: int) -> tuple[int, str]:
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.status, response.read().decode("utf-8", errors="replace")
+
+
+def openai_message_text(data: dict[str, object]) -> str:
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise ValueError("missing choices")
+    first = choices[0]
+    if not isinstance(first, dict):
+        raise ValueError("invalid choice")
+    message = first.get("message")
+    if not isinstance(message, dict):
+        raise ValueError("missing message")
+    content = message.get("content")
+    if isinstance(content, str) and content.strip():
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, dict) and isinstance(item.get("text"), str):
+                parts.append(item["text"])
+        if parts:
+            return "\n".join(parts)
+    reasoning_content = message.get("reasoning_content")
+    if isinstance(reasoning_content, str) and reasoning_content.strip():
+        return reasoning_content
+    raise ValueError("missing message content")
+
+
+def resolve_plain_path(root: Path, value: str) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else root / path
+
+
+def vision_record(
+    *,
+    status: str,
+    mode: str,
+    provider: str,
+    model: str,
+    image_path: Path,
+    question: str,
+    started_at: str,
+    elapsed_ms: int,
+    result: dict[str, object] | None = None,
+    error_type: str = "",
+    message: str = "",
+    api_base_url: str = "",
+    http_status: int | None = None,
+    raw_text_preview: str = "",
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "status": status,
+        "mode": mode,
+        "provider": provider,
+        "model": model,
+        "api_base_url": api_base_url,
+        "started_at": started_at,
+        "elapsed_ms": elapsed_ms,
+        "question": question,
+        "image": {
+            "path": str(image_path),
+            "sha256": file_sha256(image_path),
+            "mime_type": image_mime_type(image_path),
+            "bytes": file_size(image_path),
+        },
+        "result": normalize_vision_result(result),
+        "error_type": error_type,
+        "message": message,
+    }
+    if http_status is not None:
+        record["http_status"] = http_status
+    if raw_text_preview:
+        record["raw_text_preview"] = raw_text_preview[:800]
+    return record
+
+
+def emit_json_result(record: dict[str, object], out: str) -> None:
+    text = json.dumps(record, ensure_ascii=False, indent=2)
+    if out:
+        target = resolve_plain_path(workspace_root(), out)
+        write_text(target, text + "\n")
+    print(text)
 
 
 def fill_template(text: str, values: dict[str, str]) -> str:
@@ -1176,6 +1408,192 @@ def cmd_static_js(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_vision_review(args: argparse.Namespace) -> int:
+    root = workspace_root()
+    image_path = resolve_plain_path(root, args.image)
+    if not image_path.exists() or not image_path.is_file():
+        raise SystemExit(f"Image file not found: {image_path}")
+    image_mime_type(image_path)
+
+    started_at = now_text()
+    start = time.monotonic()
+    provider = args.provider
+    base_url = args.base_url or os.environ.get("PENTS_VISION_BASE_URL", "https://api.openai.com/v1")
+    model = args.model or os.environ.get("PENTS_VISION_MODEL", "")
+    args.model = model
+    args.token_param = args.token_param or os.environ.get("PENTS_VISION_TOKEN_PARAM", "")
+    if not args.token_param and "api.xiaomimimo.com" in base_url:
+        args.token_param = "max_completion_tokens"
+
+    if args.mock or os.environ.get("PENTS_VISION_MOCK") == "1":
+        record = vision_record(
+            status="ok",
+            mode="mock",
+            provider=provider,
+            model=model or "mock-vision",
+            api_base_url=base_url,
+            image_path=image_path,
+            question=args.question,
+            started_at=started_at,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            result={
+                "can_read_image": False,
+                "blocker": "mock_mode_no_image_read",
+                "page_type": "",
+                "confidence": "low",
+            },
+            message="mock mode: no external API call was made",
+        )
+        emit_json_result(record, args.out)
+        return 0
+
+    api_key = os.environ.get(args.api_key_env, "").strip()
+    if not api_key:
+        record = vision_record(
+            status="error",
+            mode="api",
+            provider=provider,
+            model=model,
+            api_base_url=base_url,
+            image_path=image_path,
+            question=args.question,
+            started_at=started_at,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            error_type="missing_api_key",
+            message=f"environment variable {args.api_key_env} is not set",
+        )
+        emit_json_result(record, args.out)
+        return 2
+    if not model:
+        record = vision_record(
+            status="error",
+            mode="api",
+            provider=provider,
+            model=model,
+            api_base_url=base_url,
+            image_path=image_path,
+            question=args.question,
+            started_at=started_at,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            error_type="missing_model",
+            message="set --model or PENTS_VISION_MODEL",
+        )
+        emit_json_result(record, args.out)
+        return 2
+
+    endpoint = openai_compatible_endpoint(base_url)
+    payload = build_vision_payload(args, image_data_url(image_path))
+    raw_preview = ""
+    try:
+        http_status, body = post_json(endpoint, payload, api_key, args.timeout)
+        raw_preview = body
+        response = json.loads(body)
+        if not isinstance(response, dict):
+            raise ValueError("API response is not a JSON object")
+        model_text = openai_message_text(response)
+        raw_preview = model_text
+        model_result = json.loads(extract_json_payload(model_text))
+        if not isinstance(model_result, dict):
+            raise ValueError("model output is not a JSON object")
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        record = vision_record(
+            status="error",
+            mode="api",
+            provider=provider,
+            model=model,
+            api_base_url=base_url,
+            image_path=image_path,
+            question=args.question,
+            started_at=started_at,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            error_type="api_http_error",
+            message=str(exc),
+            http_status=exc.code,
+            raw_text_preview=error_body,
+        )
+        emit_json_result(record, args.out)
+        return 2
+    except (urllib.error.URLError, TimeoutError) as exc:
+        record = vision_record(
+            status="error",
+            mode="api",
+            provider=provider,
+            model=model,
+            api_base_url=base_url,
+            image_path=image_path,
+            question=args.question,
+            started_at=started_at,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            error_type="api_timeout_or_network_error",
+            message=str(exc),
+        )
+        emit_json_result(record, args.out)
+        return 2
+    except (json.JSONDecodeError, ValueError) as exc:
+        record = vision_record(
+            status="error",
+            mode="api",
+            provider=provider,
+            model=model,
+            api_base_url=base_url,
+            image_path=image_path,
+            question=args.question,
+            started_at=started_at,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            error_type="invalid_api_or_model_json",
+            message=str(exc),
+            raw_text_preview=raw_preview,
+        )
+        emit_json_result(record, args.out)
+        return 2
+
+    record = vision_record(
+        status="ok",
+        mode="api",
+        provider=provider,
+        model=model,
+        api_base_url=base_url,
+        image_path=image_path,
+        question=args.question,
+        started_at=started_at,
+        elapsed_ms=int((time.monotonic() - start) * 1000),
+        result=model_result,
+        http_status=http_status,
+    )
+    emit_json_result(record, args.out)
+    return 0
+
+
+def first_json_object(text: str) -> str:
+    start = text.find("{")
+    if start < 0:
+        return ""
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\" and in_string:
+            escaped = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return ""
+
+
 def extract_json_payload(text: str) -> str:
     json_fence = re.search(r"```json\s*(.*?)```", text, re.IGNORECASE | re.DOTALL)
     if json_fence:
@@ -1183,7 +1601,7 @@ def extract_json_payload(text: str) -> str:
     any_fence = re.search(r"```\s*(.*?)```", text, re.DOTALL)
     if any_fence:
         return any_fence.group(1).strip()
-    return text.strip()
+    return first_json_object(text) or text.strip()
 
 
 def load_agent_output(root: Path, project: Path, value: str) -> dict[str, object]:
@@ -1814,6 +2232,27 @@ def build_parser() -> argparse.ArgumentParser:
     static_js_parser.add_argument("--save", action="store_true", help="save summary to project or run outputs")
     static_js_parser.add_argument("--max-items", type=int, default=30)
     static_js_parser.set_defaults(func=cmd_static_js)
+
+    vision_parser = subparsers.add_parser("vision-review", help="review a screenshot through a vision API and write JSON")
+    vision_parser.add_argument("image", help="local screenshot path")
+    vision_parser.add_argument("--question", required=True, help="narrow visual question to answer")
+    vision_parser.add_argument("--context", action="append", default=[], help="optional context line, no secrets")
+    vision_parser.add_argument("--out", default="", help="write JSON result to this file")
+    vision_parser.add_argument("--provider", default="openai-compatible", choices=("openai-compatible",))
+    vision_parser.add_argument("--base-url", default="", help="OpenAI-compatible base URL; defaults to PENTS_VISION_BASE_URL or OpenAI")
+    vision_parser.add_argument("--model", default="", help="vision model; defaults to PENTS_VISION_MODEL")
+    vision_parser.add_argument("--api-key-env", default="PENTS_VISION_API_KEY", help="environment variable that stores the API key")
+    vision_parser.add_argument("--timeout", type=int, default=30)
+    vision_parser.add_argument("--max-tokens", type=int, default=1600)
+    vision_parser.add_argument(
+        "--token-param",
+        choices=("max_tokens", "max_completion_tokens"),
+        default="",
+        help="token limit field name; official MiMo API examples use max_completion_tokens",
+    )
+    vision_parser.add_argument("--json-mode", action="store_true", help="send response_format=json_object when provider supports it")
+    vision_parser.add_argument("--mock", action="store_true", help="validate JSON output shape without calling any external API")
+    vision_parser.set_defaults(func=cmd_vision_review)
 
     merge_parser = subparsers.add_parser("merge", help="merge structured sub-agent output into project records")
     merge_parser.add_argument("project")
