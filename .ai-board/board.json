@@ -6,7 +6,7 @@
   },
   "next_id": 55,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T06:28:47+00:00",
+  "updated_at": "2026-06-04T06:35:43+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T04:04:33+00:00",
+      "updated_at": "2026-06-04T06:35:33+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T04:04:33+00:00"
+      "released_at": "2026-06-04T06:35:33+00:00"
     },
     {
       "id": "claude-code",
@@ -107,29 +107,6 @@
       "lease_expires_at": ""
     },
     {
-      "id": "T-0052",
-      "title": "设计资产图谱模型与入口卡片模板",
-      "description": "",
-      "priority": "P1",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "定义资产图谱核心实体和关系：domain/subdomain/ip/url/service/app/fingerprint/api/evidence/risk；设计可读的入口卡片模板，能表达存活状态、技术栈、登录注册、API、交互点、高价值测试点和授权状态；明确 pents/模板/项目文档如何记录和合并。"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-04T06:28:27+00:00",
-      "updated_at": "2026-06-04T06:28:27+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
       "id": "T-0053",
       "title": "设计 browser-test-agent 任务卡与证据回填流程",
       "description": "",
@@ -171,7 +148,9 @@
       "deferred_verification": "",
       "leftovers": "",
       "created_at": "2026-06-04T06:28:47+00:00",
-      "updated_at": "2026-06-04T06:28:47+00:00"
+      "updated_at": "2026-06-04T06:28:47+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
     }
   ],
   "archive": [
@@ -1955,6 +1934,40 @@
       "started_at": "2026-06-04T04:00:36+00:00",
       "completed_at": "2026-06-04T04:04:33+00:00",
       "archived_at": "2026-06-04T04:04:41+00:00"
+    },
+    {
+      "id": "T-0052",
+      "title": "设计资产图谱模型与入口卡片模板",
+      "description": "",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "docs/项目路线/README.md",
+        "docs/项目路线/模板与数据结构.md",
+        "docs/项目路线/资产图谱与入口卡片.md",
+        "templates/asset-card.md",
+        "templates/inventory.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "定义资产图谱核心实体和关系：domain/subdomain/ip/url/service/app/fingerprint/api/evidence/risk；设计可读的入口卡片模板，能表达存活状态、技术栈、登录注册、API、交互点、高价值测试点和授权状态；明确 pents/模板/项目文档如何记录和合并。"
+      ],
+      "verification": "已新增 docs/项目路线/资产图谱与入口卡片.md，定义 domain/subdomain/ip/url/service/app/fingerprint/api/evidence/risk 核心实体、关系模型、授权状态、入口卡片字段和回填/合并规则；已新增 templates/asset-card.md；templates/inventory.md 增加入口卡片索引；docs/项目路线/README.md、docs/项目路线/模板与数据结构.md、docs/当前状态.md 已同步。验证：rg 检查资产图谱、入口卡片、AC-0001、授权状态、asset-card 模板等关键词均覆盖；Test-Path 确认路线文档和模板存在。未跑代码测试，因为本任务只改 Markdown 文档和模板。",
+      "deferred_verification": "",
+      "leftovers": "未实现 pents asset card/merge/graph 命令；这些已在路线文档中标为后续可单独排期。T-0053 browser-test-agent 和 T-0054 源站分级仍保留在需求池。",
+      "created_at": "2026-06-04T06:28:27+00:00",
+      "updated_at": "2026-06-04T06:35:43+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T06:33:59+00:00",
+      "started_at": "2026-06-04T06:31:28+00:00",
+      "completed_at": "2026-06-04T06:35:33+00:00",
+      "archived_at": "2026-06-04T06:35:43+00:00"
     }
   ]
 }
