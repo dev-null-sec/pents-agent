@@ -77,7 +77,9 @@
 
 主 agent 默认基于 `snapshot`、DOM 文本、URL、网络摘要和请求/响应判断页面状态。截图默认作为证据保存。
 
-出现以下情况时，主 agent 必须主动调用 `pents vision-review`，不需要用户额外提醒：
+视觉判断遵循：先文本回退再视觉 fallback。`snapshot -i` 为空、返回 `(no interactive elements)` 或交互元素明显过少时，必须先执行 `snapshot --full` 并保存证据；如果 `snapshot --full` 已能说明页面状态，应优先用文本证据继续，并在 run 记录中说明未调用视觉复核的原因。
+
+只有文本证据仍不足，且出现以下情况时，主 agent 才必须主动调用 `pents vision-review`，不需要用户额外提醒：
 
 - `snapshot` 为空、过少，或页面主体疑似 canvas、图片、SVG、视频、WebGL。
 - 发现验证码、Turnstile、滑块、二维码、WAF 挑战或风控页面。
@@ -100,9 +102,9 @@ API key 只允许通过本地 `.env` / `.env.local` 或环境变量读取。若 
 3. 准备 `outputs/browser/visual-reviews/`，用于保存 `pents vision-review` 的 JSON 输出。
 4. 使用 `agent-browser open` 打开入口 URL。
 5. 执行 `agent-browser snapshot -i`，记录页面标题、URL、主要交互元素。
-6. 如果 `snapshot -i` 为空或交互元素过少，先执行 `agent-browser snapshot --full` 并保存证据。
+6. 如果 `snapshot -i` 为空、返回 `(no interactive elements)` 或交互元素过少，先执行 `agent-browser snapshot --full` 并保存证据。
 7. 保存首屏截图。
-8. 判断是否需要视觉复核；如需要，调用 `pents vision-review` 并保存 JSON 输出。
+8. 先判断 `snapshot --full` 文本证据是否足够；足够则记录“未调用视觉复核原因”，不足再调用 `pents vision-review` 并保存 JSON 输出。
 9. 识别登录、注册、搜索、上传、支付、OAuth、管理功能等交互点。
 10. 如有授权账号，按账号角色登录并保存 state；登录后重新 snapshot。
 11. 对任务卡指定的少量路径/API 候选做页面级验证。

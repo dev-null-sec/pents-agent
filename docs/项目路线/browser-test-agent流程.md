@@ -74,6 +74,7 @@ open -> snapshot -i -> act -> wait -> snapshot -i -> evidence
 执行要求：
 
 - 页面变化后必须重新 snapshot，不能复用旧的 `@eN` 引用。
+- 如果 `snapshot -i` 为空、返回 `(no interactive elements)` 或交互元素明显过少，先执行 `snapshot --full` 并把完整快照保存到 `outputs/browser/snapshots/`；空交互摘要不等于页面无内容。
 - 优先使用 snapshot refs，其次用 role/text/label/placeholder，CSS 选择器只作 fallback。
 - 页面变化后使用明确等待：URL、文本、元素或 networkidle，不默认硬等。
 - 登录凭据优先使用 agent-browser auth vault 或 state 文件，不把密码写入命令历史。
@@ -83,7 +84,9 @@ open -> snapshot -i -> act -> wait -> snapshot -i -> evidence
 
 ## 视觉复核 fallback
 
-主 agent 在以下场景应自动调用 `pents vision-review`：
+主 agent 遵循“先文本回退再视觉 fallback”：`snapshot -i` 为空或出现 `(no interactive elements)` 时，先尝试 `snapshot --full`；如果完整快照已能说明页面标题、表单、按钮、错误提示或挑战状态，就继续基于文本证据判断，并在 run 记录里说明未调用视觉复核的原因。
+
+只有文本证据仍不足时，主 agent 才自动调用 `pents vision-review`：
 
 - `snapshot` 为空、信息过少，或页面主体疑似 canvas、图片、SVG、视频、WebGL。
 - 页面出现验证码、Cloudflare Turnstile、滑块、二维码、图形验证、WAF 挑战或风控提示。

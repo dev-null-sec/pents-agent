@@ -50,7 +50,7 @@ required_tools:
 
 1. 使用 `agent-browser open <url>` 打开任务卡允许的入口。
 2. 立即执行 `agent-browser snapshot -i`，保存页面标题、URL、主要可交互元素。
-3. 如果 `snapshot -i` 为空、交互元素过少或明显缺少页面主体，先执行 `agent-browser snapshot --full` 并保存证据。
+3. 如果 `snapshot -i` 为空、返回 `(no interactive elements)`、交互元素过少或明显缺少页面主体，先执行 `agent-browser snapshot --full` 并保存证据；这不代表页面不可用，只代表交互摘要不足。
 4. 保存首屏截图到 run 目录。
 5. 页面变化后必须重新 snapshot，不复用旧的 `@eN` 引用。
 6. 点击、提交或 SPA 跳转后使用明确等待：URL、文本、元素或 `networkidle`。
@@ -68,7 +68,7 @@ required_tools:
 
 ### 步骤 3：自动判断是否需要视觉复核
 
-出现以下任一情况，主 agent 应主动调用 `pents vision-review`，不等待用户提醒：
+完成文本回退后仍出现以下任一情况，主 agent 应主动调用 `pents vision-review`，不等待用户提醒：
 
 - `snapshot` 信息为空、过少，或页面主体疑似 canvas、图片、SVG、视频、WebGL 渲染。
 - 页面存在验证码、Cloudflare Turnstile、滑块、二维码、图形验证码或 WAF 挑战状态，需要判断是否出现。
@@ -76,7 +76,7 @@ required_tools:
 - UI 布局、遮挡、弹窗、按钮可见性、标注截图是否准确，无法仅凭文本判断。
 - `agent-browser screenshot --annotate` 产物需要确认编号、框选或标签是否遮挡关键内容。
 
-触发视觉判断前，必须先做文本回退：`snapshot -i` 为空时先尝试 `snapshot --full`。如果 `snapshot --full` 已能说明页面状态，优先使用文本证据，并把未调用视觉复核的原因写入 run 记录。
+触发视觉判断前，必须先做文本回退：`snapshot -i` 为空或出现 `(no interactive elements)` 时先尝试 `snapshot --full`。如果 `snapshot --full` 已能说明页面状态，优先使用文本证据，并把未调用视觉复核的原因写入 run 记录。简记为：先文本回退再视觉 fallback。
 
 调用时只给 CLI 一个窄问题，例如：
 

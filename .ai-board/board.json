@@ -6,7 +6,7 @@
   },
   "next_id": 63,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T10:12:31+00:00",
+  "updated_at": "2026-06-04T10:26:57+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T10:12:19+00:00",
+      "updated_at": "2026-06-04T10:26:57+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T10:12:19+00:00"
+      "released_at": "2026-06-04T10:26:57+00:00"
     },
     {
       "id": "claude-code",
@@ -126,31 +126,6 @@
       "leftovers": "",
       "created_at": "2026-06-04T06:28:47+00:00",
       "updated_at": "2026-06-04T06:28:47+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0059",
-      "title": "补充 browser-test-agent 的 snapshot --full 回退逻辑",
-      "description": "R001 hiwonder canary 发现 snapshot -i 返回空不代表页面无内容；应先尝试 snapshot --full，再决定是否需要 vision-reviewer，避免误触发视觉子代理。",
-      "priority": "P2",
-      "status": "inbox",
-      "lane": "代理协作能力",
-      "source": "review",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "更新 skills/recon/browser-test-agent/SKILL.md 和 docs/项目路线/browser-test-agent流程.md：snapshot -i 为空或交互元素过少时，先执行 snapshot --full 并保存证据；--full 有内容则优先基于文本证据继续，只有文本仍不足时才触发 vision-reviewer。",
-        "同步 templates/browser-test-agent-brief.md 的建议流程和停止/记录要求。",
-        "验证关键词覆盖 snapshot --full、no interactive elements、先文本回退再视觉 fallback；不执行真实浏览器访问。"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-04T07:59:13+00:00",
-      "updated_at": "2026-06-04T07:59:13+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -2250,6 +2225,40 @@
       "started_at": "2026-06-04T10:12:04+00:00",
       "completed_at": "2026-06-04T10:12:19+00:00",
       "archived_at": "2026-06-04T10:12:31+00:00"
+    },
+    {
+      "id": "T-0059",
+      "title": "补充 browser-test-agent 的 snapshot --full 回退逻辑",
+      "description": "R001 hiwonder canary 发现 snapshot -i 返回空不代表页面无内容；应先尝试 snapshot --full，再决定是否需要 vision-reviewer，避免误触发视觉子代理。",
+      "priority": "P2",
+      "status": "archived",
+      "lane": "代理协作能力",
+      "source": "review",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "docs/项目路线/browser-test-agent流程.md",
+        "skills/recon/browser-test-agent/SKILL.md",
+        "templates/browser-test-agent-brief.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "更新 skills/recon/browser-test-agent/SKILL.md 和 docs/项目路线/browser-test-agent流程.md：snapshot -i 为空或交互元素过少时，先执行 snapshot --full 并保存证据；--full 有内容则优先基于文本证据继续，只有文本仍不足时才触发 vision-reviewer。",
+        "同步 templates/browser-test-agent-brief.md 的建议流程和停止/记录要求。",
+        "验证关键词覆盖 snapshot --full、no interactive elements、先文本回退再视觉 fallback；不执行真实浏览器访问。"
+      ],
+      "verification": "已更新 skills/recon/browser-test-agent/SKILL.md、docs/项目路线/browser-test-agent流程.md、templates/browser-test-agent-brief.md 和 docs/当前状态.md；rg 验证 snapshot --full、no interactive elements、先文本回退再视觉 fallback、pents vision-review 关键词覆盖；git diff --check 对本轮修改文件通过；本轮未执行真实浏览器访问",
+      "deferred_verification": "",
+      "leftovers": "无",
+      "created_at": "2026-06-04T07:59:13+00:00",
+      "updated_at": "2026-06-04T10:26:57+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T10:24:24+00:00",
+      "started_at": "2026-06-04T10:24:24+00:00",
+      "completed_at": "2026-06-04T10:26:57+00:00",
+      "archived_at": "2026-06-04T10:26:57+00:00"
     }
   ]
 }
