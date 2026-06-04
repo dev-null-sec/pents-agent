@@ -37,3 +37,21 @@
 - `puredns + massdns` 主链路可在 5 分钟内跑完整个主字典。
 - 最终复核不应沿用过紧的 `retry=1 timeout=2`；小列表复核默认采用 `retry=2 timeout=3` 更稳。
 - 后续 Claude Code 复测需要记录各扫描步骤耗时，并与本 baseline 对比。
+
+## 2026-06-04 puredns wrapper 执行风险
+
+Claude Code 复测中，Git Bash 和 PowerShell 原生执行 `puredns bruteforce -b massdns.exe` 都出现长时间卡住。进程诊断显示：
+
+- `puredns.exe` 和 `massdns.exe` CPU 基本不动。
+- puredns 临时目录中的 `massdns_public.txt`、`domains.txt`、`temporary.txt` 均为 0 字节。
+- `massdns.exe` 没有 UDP endpoint，说明尚未进入 DNS 请求阶段。
+- 1 个词的小样本 `puredns -q` 正常，`massdns` 文件输入 canary 也正常。
+
+结论：问题集中在 Claude Code 执行环境下的 `puredns -> massdns stdin pipe`，不是 resolver 慢，也不是单纯 Bash 问题。
+
+后续默认主动 DNS 主链路改为 `massdns direct`：
+
+- 由 `tools/recon/active-dns-massdns.ps1` 生成候选文件。
+- `massdns` 直接读取候选文件，不走 stdin pipe。
+- 脚本统一记录 canary、resolver 自检、NXDOMAIN/wildcard、完整枚举、命中提取和耗时 metrics。
+- `puredns` 保留为可选人工诊断工具，不再作为 Claude Code 默认执行器。

@@ -24,3 +24,7 @@ projects/<name>/runs/Rxxx-<date-purpose>/outputs/
 ## 当前子目录
 
 - `static-js/`：JS 静态分析辅助工具预留目录；当前由 `pents static-js` 提供轻量提取能力。
+
+## 当前脚本
+
+- `active-dns-massdns.ps1`：主动 DNS 默认执行器。它用字典生成候选文件，再以文件输入方式调用 `massdns`，同时记录 canary、resolver 自检、NXDOMAIN/wildcard、完整枚举、命中提取和耗时 metrics。默认给 Claude Code 使用，避免 puredns wrapper 的 stdin pipe 卡死问题。

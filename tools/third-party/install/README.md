@@ -43,7 +43,9 @@ uv run --project cli pents doctor-recon
 
 ## massdns
 
-`massdns` 是 `puredns` 和 `shuffledns` 的高性能 DNS 解析引擎。优先从官方仓库构建或下载 release，并把可执行文件放到 `tools/third-party/bin/`。
+`massdns` 是当前主动 DNS 默认主引擎。`tools/recon/active-dns-massdns.ps1` 会先生成候选文件，再把候选文件作为 massdns 输入，避免 puredns wrapper 内部 stdin pipe 在 Claude Code 执行环境里卡死。
+
+`puredns`、`dnsx`、`shuffledns` 现在都是可选诊断或替代工具，不再是默认主动 DNS 主链路的必需项。
 
 当前 Windows 本地链路：
 

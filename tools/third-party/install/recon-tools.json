@@ -5,7 +5,7 @@
   "tools": [
     {
       "name": "puredns",
-      "role": "preferred active DNS brute force wrapper with wildcard filtering",
+      "role": "optional active DNS wrapper for manual diagnosis or complex wildcard cases",
       "upstream": "https://github.com/d3mondev/puredns",
       "source_dir": "tools/third-party/vendor/puredns",
       "binary": "puredns",
@@ -14,7 +14,7 @@
     },
     {
       "name": "massdns",
-      "role": "high-performance DNS resolver engine required by puredns and shuffledns",
+      "role": "default active DNS engine; use file input via tools/recon/active-dns-massdns.ps1",
       "upstream": "https://github.com/blechschmidt/massdns",
       "source_dir": "tools/third-party/vendor/massdns",
       "binary": "massdns",
@@ -32,7 +32,7 @@
     },
     {
       "name": "dnsx",
-      "role": "DNS verification, resolver health check, record query, and fallback list resolver",
+      "role": "optional DNS diagnostic for small manual checks; not part of the default active DNS chain",
       "upstream": "https://github.com/projectdiscovery/dnsx",
       "source_dir": "tools/third-party/vendor/dnsx",
       "binary": "dnsx",

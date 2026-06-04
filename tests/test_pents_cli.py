@@ -382,9 +382,10 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("all_proxy", result.stdout)
         self.assertIn("不要把这个本机代理配置套到远端机器", result.stdout)
         self.assertIn("tools/third-party/bin", result.stdout)
-        self.assertIn("puredns + massdns", result.stdout)
-        self.assertIn("复核", result.stdout)
-        self.assertIn("fallback", result.stdout)
+        self.assertIn("massdns direct", result.stdout)
+        self.assertIn("active-dns-core", result.stdout)
+        self.assertIn("optional-wrapper", result.stdout)
+        self.assertIn("optional-diagnostic", result.stdout)
         for tool in ("subfinder", "puredns", "massdns", "dnsx", "httpx", "shuffledns", "subzy"):
             self.assertIn(tool, result.stdout)
         for platform_name in ("Windows", "WSL/Linux", "macOS"):
@@ -409,8 +410,6 @@ class PentsCliTests(unittest.TestCase):
             "ai",
             "--nonce",
             "nx-test",
-            "--engine",
-            "puredns",
             "--save",
         )
 
@@ -418,9 +417,9 @@ class PentsCliTests(unittest.TestCase):
         self.assertIn("devnu11.cn", result.stdout)
         self.assertIn("ai.devnu11.cn", result.stdout)
         self.assertIn("nx-test.devnu11.cn", result.stdout)
-        self.assertIn("puredns + massdns", result.stdout)
-        self.assertIn("dnsx -wd", result.stdout)
-        self.assertIn("禁止", result.stdout)
+        self.assertIn("massdns direct", result.stdout)
+        self.assertIn("active-dns-massdns.ps1", result.stdout)
+        self.assertIn("powershell", result.stdout)
         self.assertIn("resolver 自检", result.stdout)
         self.assertIn("证据登记", result.stdout)
 
@@ -432,7 +431,10 @@ class PentsCliTests(unittest.TestCase):
         summary = run / "outputs" / "active-dns-summary.md"
         for path in (plan, resolvers, canary, nxdomain, summary):
             self.assertTrue(path.exists(), path)
-        self.assertIn("puredns bruteforce", plan.read_text(encoding="utf-8"))
+        plan_text = plan.read_text(encoding="utf-8")
+        self.assertIn("active-dns-massdns.ps1", plan_text)
+        self.assertIn("-HashmapSize 10000", plan_text)
+        self.assertNotIn("puredns bruteforce", plan_text)
         self.assertIn("1.1.1.1", resolvers.read_text(encoding="utf-8"))
         self.assertEqual("ai.devnu11.cn\n", canary.read_text(encoding="utf-8"))
         self.assertEqual("nx-test.devnu11.cn\n", nxdomain.read_text(encoding="utf-8"))

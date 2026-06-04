@@ -15,8 +15,9 @@
 
 ## recon 工具方向
 
-- 主动 DNS 主引擎：`puredns + massdns`。
+- 主动 DNS 主引擎：`massdns direct`，由 `tools/recon/active-dns-massdns.ps1` 生成候选文件并以文件输入方式调用。
+- 主动 DNS 可选 wrapper：`puredns + massdns`，仅用于人工诊断或复杂 wildcard 场景参考。
 - 主动 DNS 兼容替代：`shuffledns + massdns`。
-- DNS 复核和小规模 fallback：`dnsx`。
+- DNS 小规模诊断：`dnsx`。
 
 `pents doctor-recon` 的查找顺序是 `tools/third-party/bin` -> 系统 PATH。PATH 只作为 fallback，不是项目推荐安装位置。

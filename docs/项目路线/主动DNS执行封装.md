@@ -21,10 +21,12 @@
 4. Canary 子域校验：至少提供 1 个已知存在子域，例如 `ai.example.com`。
 5. 随机 NXDOMAIN 检查：用于发现泛解析或 wildcard。
 6. 逐 resolver 自检：慢或 0 响应的 resolver 必须剔除。
-7. 完整字典枚举：优先 `puredns + massdns`，其次 `shuffledns + massdns`，最后 `dnsx -l fallback`。
-8. A/AAAA/CNAME 复核：统一用 `dnsx` 对命中列表做记录复核。
-9. 证据登记：生成 `pents evidence` 命令，把复核 JSONL 登记为 `active-dns` 证据。
+7. 完整字典枚举：默认使用 `massdns direct`，先生成候选文件，再把候选文件作为 massdns 输入。
+8. 命中提取：从 massdns `Snl` 输出中提取 A/AAAA/CNAME 命中的 host，生成 `raw/active-dns-hits.txt`。
+9. 证据登记：生成 `pents evidence` 命令，把命中列表登记为 `active-dns` 证据。
 10. 报告摘要：生成待回填摘要模板，执行后填写命中数量、剔除 resolver、wildcard 结论和证据编号。
+
+`puredns`、`shuffledns` 和 `dnsx` 只保留为可选诊断或兼容替代，不再作为默认主动 DNS 执行链路。Claude Code 场景默认执行 `tools/recon/active-dns-massdns.ps1`，避免 wrapper 内部 stdin pipe 卡死。
 
 ## 禁止项
 
@@ -32,6 +34,7 @@
 - 禁止 canary 未命中时继续跑完整字典。
 - 禁止随机 NXDOMAIN 命中时直接把结果当真实子域。
 - 禁止工具缺失时声称已执行主链路。
+- 禁止 massdns direct 卡住后改回 puredns pipe 继续碰运气；应先检查候选文件、resolver 文件和 massdns 输入文件参数。
 - 禁止把 HTTP 探测、端口扫描或漏洞验证混入主动 DNS 命令。
 
 ## 输出文件
@@ -44,12 +47,17 @@ projects/<name>/runs/<run>/outputs/active-dns-summary.md
 projects/<name>/runs/<run>/outputs/active-dns-resolvers.txt
 projects/<name>/runs/<run>/outputs/active-dns-canary-targets.txt
 projects/<name>/runs/<run>/outputs/active-dns-nxdomain-targets.txt
+projects/<name>/runs/<run>/outputs/active-dns-metrics.json
+projects/<name>/runs/<run>/outputs/active-dns-summary.json
 ```
 
 执行后原始结果应写入：
 
 ```text
 projects/<name>/runs/<run>/raw/
+projects/<name>/runs/<run>/raw/active-dns-candidates.txt
+projects/<name>/runs/<run>/raw/active-dns-massdns.txt
+projects/<name>/runs/<run>/raw/active-dns-hits.txt
 ```
 
 这些 raw 输出默认不进入 Git。
