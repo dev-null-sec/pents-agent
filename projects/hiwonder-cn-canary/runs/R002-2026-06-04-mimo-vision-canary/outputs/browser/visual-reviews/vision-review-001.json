@@ -1,0 +1,44 @@
+{
+  "status": "ok",
+  "mode": "api",
+  "provider": "openai-compatible",
+  "model": "mimo-v2.5",
+  "api_base_url": "https://token-plan-cn.xiaomimimo.com/v1",
+  "started_at": "2026-06-04 18:02:34",
+  "elapsed_ms": 4781,
+  "question": "判断截图里是否出现登录页、验证码/滑块/WAF 挑战、可见交互元素和敏感信息",
+  "image": {
+    "path": "d:\\Backup\\Documents\\pentest智能体\\projects\\hiwonder-cn-canary\\runs\\R002-2026-06-04-mimo-vision-canary\\outputs\\browser\\screenshots\\admin_hiwonder_2026-06-04.png",
+    "sha256": "c8c67558bd9ddbd56844d331e3a78315d4487aff5eb2e85cd3965d6af1eb7ab1",
+    "mime_type": "image/png",
+    "bytes": 219132
+  },
+  "result": {
+    "can_read_image": true,
+    "blocker": false,
+    "page_type": "login",
+    "captcha_or_waf": {
+      "present": true,
+      "type": "captcha",
+      "evidence": ""
+    },
+    "visible_interactive_elements": [
+      "username input",
+      "password input",
+      "captcha button",
+      "keep session checkbox",
+      "login button"
+    ],
+    "sensitive_content": {
+      "present": null,
+      "description": ""
+    },
+    "confidence": 1.0
+  },
+  "error_type": "",
+  "message": "",
+  "env_files_loaded": [
+    "D:\\Backup\\Documents\\pentest智能体\\.env"
+  ],
+  "http_status": 200
+}

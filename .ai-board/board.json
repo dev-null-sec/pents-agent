@@ -6,7 +6,7 @@
   },
   "next_id": 63,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T09:46:00+00:00",
+  "updated_at": "2026-06-04T10:12:31+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T09:45:47+00:00",
+      "updated_at": "2026-06-04T10:12:19+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T09:45:47+00:00"
+      "released_at": "2026-06-04T10:12:19+00:00"
     },
     {
       "id": "claude-code",
@@ -126,32 +126,6 @@
       "leftovers": "",
       "created_at": "2026-06-04T06:28:47+00:00",
       "updated_at": "2026-06-04T06:28:47+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0058",
-      "title": "使用 mimo haiku 映射复测 hiwonder 视觉 canary R002",
-      "description": "用户将 haiku 映射切换为具备视觉能力的 mimo-v2.5-pro，需在不覆盖 R001 的前提下，由 Claude Code 执行 R002 视觉 canary。目标仍为 https://www.hiwonder.com.cn/admin_hiwonder.php/，只做公开页面打开、snapshot、截图、vision-reviewer 图片识别链路验证；不登录、不提交、不绕验证码、不做漏洞测试。",
-      "priority": "P1",
-      "status": "scheduled",
-      "lane": "模型能力验证",
-      "source": "user",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "创建 projects/hiwonder-cn-canary/runs/R002-<date>-mimo-vision-canary/，保留 R001 原始结论，R002 单独记录 progress/evidence/R002-report-delta/review。",
-        "主 agent 使用 agent-browser 打开页面、先 snapshot -i，若为空先尝试 snapshot --full，再截图并调用 model: haiku 的 vision-reviewer；记录 haiku_model_mapping=mimo-v2.5-pro 和 vision_canary_status。",
-        "如果 mimo 能读图，输出 can_read_image=true、页面类型、验证码/验证组件判断、可见交互元素和敏感信息判断；如果不能读图，记录 model_no_image_input blocker。",
-        "执行边界不变：禁止登录、提交表单、绕过验证码、payload、爆破或扩展测试。"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-04T07:59:13+00:00",
-      "updated_at": "2026-06-04T07:59:40+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     },
@@ -2243,6 +2217,39 @@
       "started_at": "2026-06-04T09:39:41+00:00",
       "completed_at": "2026-06-04T09:45:47+00:00",
       "archived_at": "2026-06-04T09:46:00+00:00"
+    },
+    {
+      "id": "T-0058",
+      "title": "使用 mimo haiku 映射复测 hiwonder 视觉 canary R002",
+      "description": "用户将 haiku 映射切换为具备视觉能力的 mimo-v2.5-pro，需在不覆盖 R001 的前提下，由 Claude Code 执行 R002 视觉 canary。目标仍为 https://www.hiwonder.com.cn/admin_hiwonder.php/，只做公开页面打开、snapshot、截图、vision-reviewer 图片识别链路验证；不登录、不提交、不绕验证码、不做漏洞测试。",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "模型能力验证",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/hiwonder-cn-canary/runs/R002-2026-06-04-mimo-vision-canary"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "创建 projects/hiwonder-cn-canary/runs/R002-<date>-mimo-vision-canary/，保留 R001 原始结论，R002 单独记录 progress/evidence/R002-report-delta/review。",
+        "主 agent 使用 agent-browser 打开页面、先 snapshot -i，若为空先尝试 snapshot --full，再截图并调用 model: haiku 的 vision-reviewer；记录 haiku_model_mapping=mimo-v2.5-pro 和 vision_canary_status。",
+        "如果 mimo 能读图，输出 can_read_image=true、页面类型、验证码/验证组件判断、可见交互元素和敏感信息判断；如果不能读图，记录 model_no_image_input blocker。",
+        "执行边界不变：禁止登录、提交表单、绕过验证码、payload、爆破或扩展测试。"
+      ],
+      "verification": "Claude Code 已执行 R002：未覆盖 R001，未操作 ai-board，未登录/提交/绕验证码/漏洞测试；agent-browser open、snapshot -i 空后 snapshot --full、screenshot 均完成；pents vision-review 使用 mimo-v2.5 返回 can_read_image=true、page_type=login、captcha_or_waf.present=true、confidence=1.0；progress/evidence/R002-report-delta/review 已回填",
+      "deferred_verification": "",
+      "leftovers": "可将 R002 成功案例继续沉淀到 browser-test-agent skill：snapshot -i 空时默认 snapshot --full，视觉不足时调用 pents vision-review",
+      "created_at": "2026-06-04T07:59:13+00:00",
+      "updated_at": "2026-06-04T10:12:31+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T10:12:04+00:00",
+      "started_at": "2026-06-04T10:12:04+00:00",
+      "completed_at": "2026-06-04T10:12:19+00:00",
+      "archived_at": "2026-06-04T10:12:31+00:00"
     }
   ]
 }
