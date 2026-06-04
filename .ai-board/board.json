@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 51,
+  "next_id": 52,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T03:55:31+00:00",
+  "updated_at": "2026-06-04T04:04:41+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T03:55:13+00:00",
+      "updated_at": "2026-06-04T04:04:33+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T03:55:13+00:00"
+      "released_at": "2026-06-04T04:04:33+00:00"
     },
     {
       "id": "claude-code",
@@ -1856,6 +1856,38 @@
       "started_at": "2026-06-04T03:49:54+00:00",
       "completed_at": "2026-06-04T03:55:13+00:00",
       "archived_at": "2026-06-04T03:55:31+00:00"
+    },
+    {
+      "id": "T-0051",
+      "title": "更新 devnu11 低频主动验证规划与任务卡",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "默认",
+      "source": "",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/devnu11-cn-e2e/briefs",
+        "projects/devnu11-cn-e2e/progress.md",
+        "projects/devnu11-cn-e2e/scope.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "scope/progress/docs 当前状态记录用户新增授权：所有已发现 devnu11 子域名可测试；HTTP/端口/服务指纹速率由执行主体按安全区间自定并加入随机抖动；新增 Claude Code 任务卡；明确本轮只更新规划，不执行任何探测。"
+      ],
+      "verification": "已更新 projects/devnu11-cn-e2e/scope.md、progress.md 和 docs/当前状态.md：记录用户确认所有已发现 devnu11 子域名可测试，HTTP/CDN/服务指纹和小范围 Web 端口速率由 Claude Code 按安全区间自定并加入随机抖动；新增 projects/devnu11-cn-e2e/briefs/claude-t0022-low-frequency-validation.md 任务卡；rg 检查关键文档中已无 HTTP 速率仍需确认、本轮授权只覆盖 DNS 等旧 blocker 口径；本轮未执行任何探测或扫描。",
+      "deferred_verification": "",
+      "leftovers": "T-0022 仍保留在需求池，等待用户把任务卡交给 Claude Code 执行；认证后 Web/API、管理员权限、OAuth 和支付流程仍需测试账号或单独授权；源站 IP 直连仍需单独确认授权。",
+      "created_at": "2026-06-04T04:00:01+00:00",
+      "updated_at": "2026-06-04T04:04:41+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T04:00:36+00:00",
+      "started_at": "2026-06-04T04:00:36+00:00",
+      "completed_at": "2026-06-04T04:04:33+00:00",
+      "archived_at": "2026-06-04T04:04:41+00:00"
     }
   ]
 }

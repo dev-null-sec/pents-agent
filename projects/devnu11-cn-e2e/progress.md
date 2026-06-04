@@ -3,7 +3,7 @@
 ## 概要
 
 - 项目名称：devnu11-cn-e2e
-- 当前阶段：静态分析、被动 recon 和 Claude Code 正式主动 DNS 已完成；HTTP/CDN、端口、服务指纹和漏洞验证等待授权窗口、速率和账号
+- 当前阶段：静态分析、被动 recon 和 Claude Code 正式主动 DNS 已完成；低频 HTTP/CDN、服务指纹和小范围 Web 端口验证已完成规划授权，等待 Claude Code 按任务卡执行；认证后测试仍等待账号
 - 更新时间：2026-06-04
 
 ## 时间线
@@ -19,6 +19,7 @@
 | 2026-06-02 | Claude Code | 低频 recon 被动部分 | 5 个被动来源复查（crt.sh/urlscan/Wayback/OTX/Google）全部无结果；识别软件为 Sub2API；发现 Cloudflare Turnstile 线索；更新 inventory/evidence/progress/review |
 | 2026-06-03 | Codex | 主动 DNS 工具链路前置验证 | 执行边界误判，实际跑完 dnsx 主字典；结果只作为前置验证和对照基线，不作为 Claude Code 正式执行验收 |
 | 2026-06-04 | Claude Code | T-0042 正式主动 DNS 枚举（massdns direct） | 167377 候选，4 命中（ai/blog/lk/st），60.669 秒；与 R001 可解析基线完全一致 |
+| 2026-06-04 | Codex | 更新 T-0022 低频主动验证规划 | 用户确认所有已发现子域名可测试，速率由执行主体自定安全区间并加入随机抖动；本轮只更新规划和任务卡，未执行探测 |
 
 ## 资产变更
 
@@ -47,21 +48,33 @@
 | `*.devnu11.cn` | 被动子域名发现 | 被动来源复查 | Claude Code | ✅ done | 5 来源均无结果，记录于 inventory 和 E-0007/E-0008 |
 | `*.devnu11.cn` | 主动 DNS 子域名枚举 | T-0042；Claude Code 正式执行 | Claude Code | ✅ done | R003 massdns direct，4 命中与 R001 基线一致；见 E-0011 |
 | `*.devnu11.cn` | 软件识别 | JS 静态分析 + WebSearch | Claude Code | ✅ done | 确认 Sub2API 开源平台，记录于 A-0004, E-0007 |
-| 候选子域名 | HTTP / CDN 判断 | 需要 HTTP 授权窗口和请求速率 | Claude Code | ⛔ blocker | 已有候选 DNS 名称，但本轮未授权 HTTP 探测 |
-| 待确认入口 URL | 端口确认 | 需要 URL、授权窗口、允许速率 | Claude Code | ⛔ blocker | scope.md 前置条件未满足 |
-| 待确认入口 URL | 服务指纹 | 需要 URL、授权窗口、允许速率 | Claude Code | ⛔ blocker | scope.md 前置条件未满足 |
+| 候选子域名 | HTTP / CDN 判断 | 用户已确认所有已发现子域名可测试；速率由执行主体按安全区间自定 | Claude Code | 📝 planned | 当前候选为 `ai/blog/lk/st`；执行前创建新 run，记录时间、请求预算、随机等待区间和停止条件 |
+| 候选子域名 | 小范围 Web 端口确认 | 仅限常见 Web 入口端口，禁止全端口扫描 | Claude Code | 📝 planned | 建议 80/443/8080/8443；全局并发 1，目标之间随机等待 3-10 秒 |
+| 候选子域名 | 服务指纹 | HTTP/CDN 存活结果 | Claude Code | 📝 planned | 仅做标题、状态码、响应头、证书、跳转链和基础技术栈记录 |
 | 源站线索 | 源站挖掘 | 只做被动线索；直连 IP 需用户单独授权 | Claude Code | ✅ 被动完成 | 记录 Cloudflare/Su2API 源站线索，见 inventory |
 
-## 跳过 / 阻塞项
+## 下一轮执行计划（T-0022）
+
+- 执行主体：Claude Code。
+- Codex 职责：只维护 ai-board、任务卡和项目文档；不执行探测。
+- 目标：所有已发现且可解析的 `devnu11.cn` 子域名，当前为 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn`；`online.devnu11.cn` 为 NODATA 候选，未恢复地址记录前不做 HTTP。
+- HTTP/CDN/服务指纹节奏：全局并发 1-2，请求之间随机等待 2-8 秒，每个子域名首轮请求预算不超过 8 次。
+- 小范围 Web 端口节奏：仅 80/443/8080/8443；全局并发 1；目标之间随机等待 3-10 秒。
+- 路径/API 验证节奏：只在已存活入口上验证 `/setup`、`/api/v1/setup/status` 等少量高价值候选；请求之间随机等待 5-15 秒；不做目录爆破或大字典 fuzz。
+- 随机等待用途：降低固定节拍和突发压力，不用于规避检测或扩大请求量。
+- 停止条件：429、WAF/验证码升级、连续 5xx、业务异常、响应包含敏感数据、需要登录或写入、疑似第三方/源站 IP 直连。
+- 回填要求：新增 run 目录，更新 inventory/evidence/progress/report-delta/review，并在顶层 progress/report/review 同步摘要。
+
+## 跳过 / 阻塞 / 待执行项
 
 原因类型可选：授权缺失、工具缺失、目标无输入、网络失败、风险过高、范围外、等待账号、其他。
 
 | 目标 | 测试面 | 状态 | 原因类型 | 具体原因 | 已尝试来源 / 替代动作 | 影响 | 建议安装工具 | 需要用户补充 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 候选子域名 | HTTP 存活 / CDN / 服务指纹 | blocker | 授权缺失 | 已发现 `ai/blog/lk/st` 有 Cloudflare A/AAAA，但本轮授权只覆盖 DNS 枚举 | 已完成主动 DNS 和 DNS 记录复核 | 无法确认真实 Web 入口、响应头、证书、跳转链和 CDN/WAF | httpx | 是否允许对候选子域名做低频 HTTP 探测；HTTP 请求速率和窗口 |
-| 待确认入口 URL | HTTP 存活 / CDN / 服务指纹 | blocker | 目标无输入 / 授权缺失 | 尚未提供实际访问 URL，HTTP 低频速率也未确认 | 已完成 JS 静态分析、软件识别和被动来源复查 | 无法确认真实入口、响应头、证书、跳转链和 CDN/WAF 判断 | httpx | 至少 1 个实际 URL、授权窗口、HTTP 请求速率 |
-| 待确认入口 URL | 小范围端口确认 | blocker | 目标无输入 / 风险过高 | 尚未提供实际入口和端口范围，不能凭通配域名扫描 | 已记录端口确认清单和禁止全端口扫描边界 | 无法确认 80/443/8080/8443 等入口暴露情况 | 视 Claude 执行环境确认 | 实际 URL 或授权 IP、授权窗口、端口范围、允许速率 |
-| 待确认入口 URL | API / 认证后测试 | blocker | 目标无输入 / 等待账号 | 尚未提供实际 URL、普通测试账号和管理员账号授权 | 已从 JS 提取 100+ API 端点和敏感管理功能 | 无法验证 F-0001、IDOR/BFLA、OAuth、支付流程 | 无 | 实际 URL、测试账号、管理员账号授权或注册许可 |
+| 候选子域名 | HTTP 存活 / CDN / 服务指纹 | planned | 其他 | 用户已确认所有已发现子域名可测试，速率由执行主体自定安全区间 | 已完成主动 DNS 和 DNS 记录复核；本轮只更新规划 | 等待 Claude Code 按任务卡执行 | httpx 或等价低频 HTTP 工具 | 执行时记录实际速率区间、开始/结束时间和停止条件 |
+| 候选子域名 | 小范围 Web 端口确认 | planned | 其他 | 已允许对所有已发现子域名做低频验证；端口范围限制为常见 Web 入口端口 | 已记录禁止全端口扫描边界 | 等待 Claude Code 按任务卡执行 | 视 Claude 执行环境确认 | 执行时仅测 80/443/8080/8443，禁止全端口扫描 |
+| 已存活入口 | `/setup` 与 `/api/v1/setup/status` 验证 | planned | 其他 | F-0001 可在存活入口上做极小范围验证；不做目录爆破 | 已从 JS 提取端点线索 | 等待 Claude Code 按任务卡执行 | 无 | 如出现登录、写入或敏感数据，立即停止 |
+| 认证后 Web/API | API / 管理员权限验证 | blocker | 等待账号 | 尚未提供普通测试账号和管理员账号授权 | 已从 JS 提取 100+ API 端点和敏感管理功能 | 无法验证 IDOR/BFLA、OAuth、支付流程和管理员权限 | 无 | 实际 URL、测试账号、管理员账号授权或注册许可 |
 
 ## 候选漏洞
 
@@ -82,8 +95,8 @@
 ## 待确认问题
 
 - ~~Claude Code 执行前确认授权窗口和允许的请求速率。~~ → 静态分析阶段无需确认
-- HTTP、端口、路径/API 和漏洞验证前仍需确认授权窗口和允许请求速率。
-- 是否允许把 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 作为下一轮低频 HTTP 候选入口。
+- ~~HTTP、端口、路径/API 和漏洞验证前仍需确认授权窗口和允许请求速率。~~ → 2026-06-04 用户已确认所有已发现子域名可测试，速率由执行主体自定安全区间；账号相关测试仍需单独确认。
+- ~~是否允许把 `ai.devnu11.cn`、`blog.devnu11.cn`、`lk.devnu11.cn`、`st.devnu11.cn` 作为下一轮低频 HTTP 候选入口。~~ → 已允许，等待 Claude Code 执行。
 - 如需认证测试，需由用户提供测试账号并明确账号权限。
-- Claude Code 已按 T-0042 完成正式主动 DNS 复测；HTTP/CDN、端口和服务指纹仍需 HTTP 授权窗口和速率。
+- Claude Code 已按 T-0042 完成正式主动 DNS 复测；HTTP/CDN、端口和服务指纹已完成规划授权，下一步按 T-0022 任务卡执行。
 - 数周后复查 crt.sh 证书透明日志。
