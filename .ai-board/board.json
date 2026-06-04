@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 58,
+  "next_id": 60,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T07:34:04+00:00",
+  "updated_at": "2026-06-04T07:59:40+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T07:33:34+00:00",
+      "updated_at": "2026-06-04T07:58:38+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T07:33:34+00:00"
+      "released_at": "2026-06-04T07:58:38+00:00"
     },
     {
       "id": "claude-code",
@@ -130,9 +130,9 @@
       "lease_expires_at": ""
     },
     {
-      "id": "T-0056",
-      "title": "对 hiwonder 管理页执行 agent-browser 视觉 canary 测试",
-      "description": "目标 URL：https://www.hiwonder.com.cn/admin_hiwonder.php/。本任务用于验证 Claude Code + agent-browser + 视觉子代理 fallback 链路，不做漏洞测试、不尝试登录、不绕过验证码、不提交表单、不爆破、不访问范围外跳转。前置条件：用户确认该外部目标允许进行仅浏览/截图/视觉识别 canary，或将目标替换为自有测试页面。",
+      "id": "T-0058",
+      "title": "使用 mimo haiku 映射复测 hiwonder 视觉 canary R002",
+      "description": "用户将 haiku 映射切换为具备视觉能力的 mimo-v2.5-pro，需在不覆盖 R001 的前提下，由 Claude Code 执行 R002 视觉 canary。目标仍为 https://www.hiwonder.com.cn/admin_hiwonder.php/，只做公开页面打开、snapshot、截图、vision-reviewer 图片识别链路验证；不登录、不提交、不绕验证码、不做漏洞测试。",
       "priority": "P1",
       "status": "scheduled",
       "lane": "模型能力验证",
@@ -142,15 +142,41 @@
       "verify_scope": [],
       "depends_on": [],
       "acceptance": [
-        "生成 Claude Code 可读的短任务卡：主 agent 使用 agent-browser 打开页面、snapshot、保存截图；若 snapshot 无法判断页面视觉状态，则自动调用 model: haiku 的 vision-reviewer 子代理识别截图。",
-        "执行时只允许读取公开页面、保存截图、识别页面是否为登录页/是否存在验证码或明显视觉元素；禁止输入账号密码、提交表单、绕过验证码或做漏洞 payload。",
-        "结果回填 run 记录：页面 URL、截图路径、snapshot 摘要、视觉子代理输出、是否支持图片识别、blocker/next_steps；如果缺授权或 haiku 映射模型不能读图，记录 blocker。"
+        "创建 projects/hiwonder-cn-canary/runs/R002-<date>-mimo-vision-canary/，保留 R001 原始结论，R002 单独记录 progress/evidence/R002-report-delta/review。",
+        "主 agent 使用 agent-browser 打开页面、先 snapshot -i，若为空先尝试 snapshot --full，再截图并调用 model: haiku 的 vision-reviewer；记录 haiku_model_mapping=mimo-v2.5-pro 和 vision_canary_status。",
+        "如果 mimo 能读图，输出 can_read_image=true、页面类型、验证码/验证组件判断、可见交互元素和敏感信息判断；如果不能读图，记录 model_no_image_input blocker。",
+        "执行边界不变：禁止登录、提交表单、绕过验证码、payload、爆破或扩展测试。"
       ],
       "verification": "",
       "deferred_verification": "",
       "leftovers": "",
-      "created_at": "2026-06-04T07:20:04+00:00",
-      "updated_at": "2026-06-04T07:20:47+00:00",
+      "created_at": "2026-06-04T07:59:13+00:00",
+      "updated_at": "2026-06-04T07:59:40+00:00",
+      "lock_owner": "",
+      "lease_expires_at": ""
+    },
+    {
+      "id": "T-0059",
+      "title": "补充 browser-test-agent 的 snapshot --full 回退逻辑",
+      "description": "R001 hiwonder canary 发现 snapshot -i 返回空不代表页面无内容；应先尝试 snapshot --full，再决定是否需要 vision-reviewer，避免误触发视觉子代理。",
+      "priority": "P2",
+      "status": "inbox",
+      "lane": "代理协作能力",
+      "source": "review",
+      "owner_agent": "",
+      "scope": [],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "更新 skills/recon/browser-test-agent/SKILL.md 和 docs/项目路线/browser-test-agent流程.md：snapshot -i 为空或交互元素过少时，先执行 snapshot --full 并保存证据；--full 有内容则优先基于文本证据继续，只有文本仍不足时才触发 vision-reviewer。",
+        "同步 templates/browser-test-agent-brief.md 的建议流程和停止/记录要求。",
+        "验证关键词覆盖 snapshot --full、no interactive elements、先文本回退再视觉 fallback；不执行真实浏览器访问。"
+      ],
+      "verification": "",
+      "deferred_verification": "",
+      "leftovers": "",
+      "created_at": "2026-06-04T07:59:13+00:00",
+      "updated_at": "2026-06-04T07:59:13+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -2074,6 +2100,38 @@
       "started_at": "2026-06-04T07:25:10+00:00",
       "completed_at": "2026-06-04T07:33:34+00:00",
       "archived_at": "2026-06-04T07:34:04+00:00"
+    },
+    {
+      "id": "T-0056",
+      "title": "对 hiwonder 管理页执行 agent-browser 视觉 canary 测试",
+      "description": "目标 URL：https://www.hiwonder.com.cn/admin_hiwonder.php/。本任务用于验证 Claude Code + agent-browser + 视觉子代理 fallback 链路，不做漏洞测试、不尝试登录、不绕过验证码、不提交表单、不爆破、不访问范围外跳转。前置条件：用户确认该外部目标允许进行仅浏览/截图/视觉识别 canary，或将目标替换为自有测试页面。",
+      "priority": "P1",
+      "status": "archived",
+      "lane": "模型能力验证",
+      "source": "user",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/hiwonder-cn-canary"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "生成 Claude Code 可读的短任务卡：主 agent 使用 agent-browser 打开页面、snapshot、保存截图；若 snapshot 无法判断页面视觉状态，则自动调用 model: haiku 的 vision-reviewer 子代理识别截图。",
+        "执行时只允许读取公开页面、保存截图、识别页面是否为登录页/是否存在验证码或明显视觉元素；禁止输入账号密码、提交表单、绕过验证码或做漏洞 payload。",
+        "结果回填 run 记录：页面 URL、截图路径、snapshot 摘要、视觉子代理输出、是否支持图片识别、blocker/next_steps；如果缺授权或 haiku 映射模型不能读图，记录 blocker。"
+      ],
+      "verification": "Claude Code 已按 T-0056 完成 hiwonder R001 视觉 canary：仅打开公开页面、snapshot、截图和视觉链路验证，未登录、未提交表单、未绕过验证码、未做漏洞测试。结果显示 agent-browser open/screenshot/snapshot --full 正常；deepseek-v4-pro 和当前 haiku 映射模型均不支持图片输入，vision-reviewer 返回 can_read_image=false / blocker=model_no_image_input；snapshot --full 识别页面为 幻尔后台管理 登录页，包含用户名/密码、点击验证组件、保持会话和登录按钮。记录已回填 projects/hiwonder-cn-canary/scope.md 与 R001 progress/evidence/R001-report-delta/review；outputs 下截图、snapshot、visual-review JSON 作为本机证据保留。本轮结论：视觉 fallback 失败分支有效，当前模型配置下视觉识别不可用。",
+      "deferred_verification": "",
+      "leftovers": "需要第二轮 R002 使用用户新接入的 mimo-v2.5-pro 作为 haiku 映射模型复测；browser-test-agent skill 需补充 snapshot -i 为空时先尝试 snapshot --full 的回退逻辑。",
+      "created_at": "2026-06-04T07:20:04+00:00",
+      "updated_at": "2026-06-04T07:58:38+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T07:58:38+00:00",
+      "started_at": "2026-06-04T07:58:38+00:00",
+      "completed_at": "2026-06-04T07:58:38+00:00",
+      "archived_at": "2026-06-04T07:58:38+00:00"
     }
   ]
 }
