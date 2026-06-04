@@ -29,6 +29,14 @@ required_tools:
 - 禁止：暴力破解、凭据填充、绕过验证码、绕过风控、漏洞 payload 扫描、目录大字典爆破、真实支付、删除或破坏性写入。
 - Claude Code 不操作 ai-board；ai-board 只由 Codex / 项目开发者维护。
 
+## 工具硬约束
+
+- `agent-browser` 是浏览器打开、页面快照、截图和浏览器交互的唯一允许链路。
+- 如果 `agent-browser` 不存在、不可调用、缺少浏览器会话能力，或关键动作失败，立即停止并记录 blocker：`tool_missing_or_unavailable`。
+- 禁止把 `WebFetch`、`Invoke-WebRequest`、`curl`、`wget`、Edge / Chrome / Chromium headless、Playwright、Puppeteer、Selenium 或任意现场安装的截图库当作替代链路。
+- 禁止为了完成浏览器任务临时安装 Playwright、Puppeteer、Selenium、浏览器内核或截图工具。
+- HTTP 抓取结果不能替代 `agent-browser snapshot`；系统浏览器截图不能替代 `agent-browser screenshot`。
+
 ## 前置条件
 
 - 已读取 `scope.md`、`inventory.md`、相关入口卡片、当前 run 的 `brief.md` 和 `docs/项目路线/browser-test-agent流程.md`。
@@ -42,9 +50,10 @@ required_tools:
 
 1. 使用 `agent-browser open <url>` 打开任务卡允许的入口。
 2. 立即执行 `agent-browser snapshot -i`，保存页面标题、URL、主要可交互元素。
-3. 保存首屏截图到 run 目录。
-4. 页面变化后必须重新 snapshot，不复用旧的 `@eN` 引用。
-5. 点击、提交或 SPA 跳转后使用明确等待：URL、文本、元素或 `networkidle`。
+3. 如果 `snapshot -i` 为空、交互元素过少或明显缺少页面主体，先执行 `agent-browser snapshot --full` 并保存证据。
+4. 保存首屏截图到 run 目录。
+5. 页面变化后必须重新 snapshot，不复用旧的 `@eN` 引用。
+6. 点击、提交或 SPA 跳转后使用明确等待：URL、文本、元素或 `networkidle`。
 
 ### 步骤 2：优先用文本证据判断
 
@@ -66,6 +75,8 @@ required_tools:
 - 截图中可能包含敏感信息，需要确认是否需要打码。
 - UI 布局、遮挡、弹窗、按钮可见性、标注截图是否准确，无法仅凭文本判断。
 - `agent-browser screenshot --annotate` 产物需要确认编号、框选或标签是否遮挡关键内容。
+
+触发视觉判断前，必须先做文本回退：`snapshot -i` 为空时先尝试 `snapshot --full`。如果 `snapshot --full` 已能说明页面状态，优先使用文本证据，并把未调用视觉子代理的原因写入 run 记录。
 
 调用时只给 `vision-reviewer` 一个窄问题，例如：
 

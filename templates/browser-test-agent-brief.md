@@ -15,6 +15,21 @@
 - 创建时间：{{created_at}}
 - 当前状态：planned
 
+## 工具硬约束
+
+`agent-browser` 是本任务唯一允许的浏览器打开、页面快照、截图和浏览器交互链路。
+
+执行前先确认 `agent-browser` 可用。若命令不存在、不可调用、缺少浏览器会话能力，或 open/snapshot/screenshot 任一步无法执行，应立即停止并记录 blocker：`tool_missing_or_unavailable`。
+
+禁止把以下工具当作替代浏览器或替代截图链路：
+
+- `WebFetch`、`Invoke-WebRequest`、`curl`、`wget`
+- Edge / Chrome / Chromium headless
+- Playwright、Puppeteer、Selenium
+- 任意现场安装的截图库、浏览器自动化库或完整浏览器包
+
+禁止为了完成本任务安装工具、安装浏览器、安装 Playwright 浏览器内核，或把 HTTP 抓取结果当作浏览器 snapshot。
+
 ## 授权范围摘要
 
 ### 可测试入口
@@ -78,15 +93,16 @@
 1. 创建或进入本轮 run 目录。
 2. 准备 `outputs/browser/screenshots/`、`outputs/browser/snapshots/`、`outputs/browser/network-summary.md` 和 `raw/browser/`。
 3. 准备 `outputs/browser/visual-reviews/`，用于保存 vision-reviewer 的 JSON 输出。
-4. 使用 agent-browser 打开入口 URL。
-5. 执行 `snapshot -i`，记录页面标题、URL、主要交互元素。
-6. 保存首屏截图。
-7. 判断是否需要视觉复核；如需要，调用 vision-reviewer 并保存 JSON 输出。
-8. 识别登录、注册、搜索、上传、支付、OAuth、管理功能等交互点。
-9. 如有授权账号，按账号角色登录并保存 state；登录后重新 snapshot。
-10. 对任务卡指定的少量路径/API 候选做页面级验证。
-11. 记录关键请求/响应摘要，避免保存敏感数据。
-12. 更新入口卡片、inventory、evidence、progress、report-delta 和 review。
+4. 使用 `agent-browser open` 打开入口 URL。
+5. 执行 `agent-browser snapshot -i`，记录页面标题、URL、主要交互元素。
+6. 如果 `snapshot -i` 为空或交互元素过少，先执行 `agent-browser snapshot --full` 并保存证据。
+7. 保存首屏截图。
+8. 判断是否需要视觉复核；如需要，调用 vision-reviewer 并保存 JSON 输出。
+9. 识别登录、注册、搜索、上传、支付、OAuth、管理功能等交互点。
+10. 如有授权账号，按账号角色登录并保存 state；登录后重新 snapshot。
+11. 对任务卡指定的少量路径/API 候选做页面级验证。
+12. 记录关键请求/响应摘要，避免保存敏感数据。
+13. 更新入口卡片、inventory、evidence、progress、report-delta 和 review。
 
 ## agent-browser 操作规则
 
@@ -96,6 +112,7 @@
 - 截图保存到 run 目录，不覆盖旧截图。
 - 如保存 HAR 或 state，必须记录脱敏要求。
 - 结束后关闭不需要的浏览器 session，或说明保留原因。
+- `snapshot -i` 为空不等于页面不可判断；先尝试 `snapshot --full`，文本证据仍不足时才触发 vision-reviewer。
 
 ## 证据要求
 

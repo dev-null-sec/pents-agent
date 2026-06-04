@@ -4,9 +4,9 @@
     "name": "Pentest Framework",
     "current_goal": "沉淀 devnu11 实战反馈：补齐实际入口后执行低频主动验证，并优先产品化 static-js、evidence、report 与 recon skill 修订。"
   },
-  "next_id": 60,
+  "next_id": 61,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T07:59:40+00:00",
+  "updated_at": "2026-06-04T08:26:02+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T07:58:38+00:00",
+      "updated_at": "2026-06-04T08:25:48+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T07:58:38+00:00"
+      "released_at": "2026-06-04T08:25:48+00:00"
     },
     {
       "id": "claude-code",
@@ -2132,6 +2132,41 @@
       "started_at": "2026-06-04T07:58:38+00:00",
       "completed_at": "2026-06-04T07:58:38+00:00",
       "archived_at": "2026-06-04T07:58:38+00:00"
+    },
+    {
+      "id": "T-0060",
+      "title": "补齐 T-0058 明确任务卡和 agent-browser 工具硬约束",
+      "description": "",
+      "priority": "P0",
+      "status": "archived",
+      "lane": "代理协作能力",
+      "source": "R002 执行复盘",
+      "owner_agent": "codex",
+      "scope": [
+        "docs/当前状态.md",
+        "projects/hiwonder-cn-canary/briefs/claude-t0058-mimo-vision-canary.md",
+        "skills/recon/browser-test-agent/SKILL.md",
+        "templates/browser-test-agent-brief.md"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "T-0058 有可被 Claude Code 直接读取的任务卡文件，用户无需写长提示词",
+        "任务卡明确 agent-browser 是唯一浏览器、snapshot、截图链路；不可用就记录 blocker 并停止",
+        "browser-test-agent skill 和任务卡模板禁止 WebFetch、Invoke-WebRequest、Edge/Chrome headless、Playwright、Puppeteer、Selenium 等替代截图链路与现场安装",
+        "本轮不执行真实浏览器访问，只验证文档和关键词约束"
+      ],
+      "verification": "已确认 T-0058 任务卡文件存在；rg 验证 agent-browser、tool_missing_or_unavailable、snapshot --full、禁止 Playwright/Puppeteer/Selenium/WebFetch/Invoke-WebRequest 等关键词覆盖任务卡、skill、模板和当前状态；ai-board conflicts 无冲突；本轮未执行真实浏览器访问",
+      "deferred_verification": "",
+      "leftovers": "T-0059 仍需把 snapshot --full 回退逻辑同步到 docs/项目路线/browser-test-agent流程.md",
+      "created_at": "2026-06-04T08:22:22+00:00",
+      "updated_at": "2026-06-04T08:26:02+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T08:22:45+00:00",
+      "started_at": "2026-06-04T08:22:45+00:00",
+      "completed_at": "2026-06-04T08:25:48+00:00",
+      "archived_at": "2026-06-04T08:26:02+00:00"
     }
   ]
 }
