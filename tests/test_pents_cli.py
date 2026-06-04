@@ -434,10 +434,49 @@ class PentsCliTests(unittest.TestCase):
         plan_text = plan.read_text(encoding="utf-8")
         self.assertIn("active-dns-massdns.ps1", plan_text)
         self.assertIn("-HashmapSize 10000", plan_text)
+        self.assertIn("-RecordTypes @('A')", plan_text)
         self.assertNotIn("puredns bruteforce", plan_text)
         self.assertIn("1.1.1.1", resolvers.read_text(encoding="utf-8"))
         self.assertEqual("ai.devnu11.cn\n", canary.read_text(encoding="utf-8"))
         self.assertEqual("nx-test.devnu11.cn\n", nxdomain.read_text(encoding="utf-8"))
+
+    def test_active_dns_can_add_record_types_and_nodata_check(self) -> None:
+        self.run_cli("new", "cli-test", "--target", "*.devnu11.cn")
+        self.run_cli("run", "new", "cli-test", "active dns", "--date", "2026-06-03")
+
+        result = self.run_cli(
+            "active-dns",
+            "*.devnu11.cn",
+            "--project",
+            "cli-test",
+            "--run",
+            "R001-2026-06-03-active-dns",
+            "--dict",
+            "dicts/curated/subdomains-main.txt",
+            "--resolvers",
+            "1.1.1.1,8.8.8.8",
+            "--canary",
+            "ai",
+            "--nonce",
+            "nx-test",
+            "--record-types",
+            "A,AAAA,CNAME",
+            "--nodata-check",
+            "--save",
+        )
+
+        self.assertIn("查询记录类型：`A,AAAA,CNAME`", result.stdout)
+        self.assertIn("NODATA 复核：开启", result.stdout)
+        self.assertIn("-RecordTypes @('A', 'AAAA', 'CNAME')", result.stdout)
+        self.assertIn("可选 dnsx NOERROR/NODATA 复核", result.stdout)
+        self.assertIn("active-dns-nodata-dnsx.jsonl", result.stdout)
+        self.assertIn("possible_nodata_or_non_address_diff", result.stdout)
+        self.assertNotIn("puredns bruteforce", result.stdout)
+
+        plan = self.project / "runs" / "R001-2026-06-03-active-dns" / "outputs" / "active-dns-plan.md"
+        plan_text = plan.read_text(encoding="utf-8")
+        self.assertIn("dnsx NOERROR/NODATA 复核", plan_text)
+        self.assertIn("NODATA 复核证据登记", plan_text)
 
 
 if __name__ == "__main__":

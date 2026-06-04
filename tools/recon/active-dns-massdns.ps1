@@ -22,7 +22,9 @@ param(
 
     [int]$HashmapSize = 10000,
 
-    [string]$RecordType = "A"
+    [string]$RecordType = "",
+
+    [string[]]$RecordTypes = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -103,9 +105,32 @@ function Invoke-MassdnsFile {
     param(
         [string]$InputFile,
         [string]$ResolverFile,
-        [string]$OutputFile
+        [string]$OutputFile,
+        [string[]]$Types = $script:RequestedRecordTypes
     )
-    & $MassdnsPath -q -r $ResolverFile -o Snl -t $RecordType --root --retry REFUSED --retry SERVFAIL -w $OutputFile -s $HashmapSize $InputFile
+    $typesToRun = @($Types | ForEach-Object { $_.Trim().ToUpperInvariant() } | Where-Object { $_ })
+    if ($typesToRun.Count -eq 0) {
+        $typesToRun = @("A")
+    }
+    if ($typesToRun.Count -eq 1) {
+        & $MassdnsPath -q -r $ResolverFile -o Snl -t $typesToRun[0] --root --retry REFUSED --retry SERVFAIL -w $OutputFile -s $HashmapSize $InputFile
+        return
+    }
+
+    [System.IO.File]::WriteAllText($OutputFile, "", [System.Text.Encoding]::ASCII)
+    $outputDir = [System.IO.Path]::GetDirectoryName($OutputFile)
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($OutputFile)
+    $extension = [System.IO.Path]::GetExtension($OutputFile)
+    foreach ($type in $typesToRun) {
+        $typedOutput = Join-Path $outputDir ("{0}-{1}{2}" -f $baseName, $type.ToLowerInvariant(), $extension)
+        & $MassdnsPath -q -r $ResolverFile -o Snl -t $type --root --retry REFUSED --retry SERVFAIL -w $typedOutput -s $HashmapSize $InputFile
+        if ($LASTEXITCODE -ne 0) {
+            throw "massdns failed for record type $type on $InputFile"
+        }
+        if (Test-Path $typedOutput) {
+            Get-Content -Path $typedOutput | Add-Content -Path $OutputFile -Encoding ascii
+        }
+    }
 }
 
 function Get-MassdnsHosts {
@@ -131,6 +156,27 @@ function Write-HostSet {
     $Hosts | Sort-Object | Set-Content -Path $PathText -Encoding ascii
 }
 
+function Get-MassdnsRecordCounts {
+    param([string]$MassdnsOutput)
+    $counts = [ordered]@{}
+    foreach ($type in $script:RequestedRecordTypes) {
+        $counts[$type] = 0
+    }
+    if (-not (Test-Path $MassdnsOutput)) {
+        return $counts
+    }
+    foreach ($line in Get-Content -Path $MassdnsOutput) {
+        if ($line -match "^\s*([^\s]+)\s+(A|AAAA|CNAME)\s+") {
+            $type = $matches[2].ToUpperInvariant()
+            if (-not $counts.Contains($type)) {
+                $counts[$type] = 0
+            }
+            $counts[$type] += 1
+        }
+    }
+    return $counts
+}
+
 $RootDomain = Normalize-Domain $Domain
 $DictionaryPath = Resolve-LocalPath $Dictionary
 $ResolversPath = Resolve-LocalPath $ResolversFile
@@ -148,6 +194,23 @@ if (-not (Test-Path $MassdnsPath)) {
     throw "massdns does not exist: $MassdnsPath"
 }
 
+$script:RequestedRecordTypes = @()
+if ($RecordTypes.Count -gt 0) {
+    $script:RequestedRecordTypes = @($RecordTypes | ForEach-Object { $_.Trim().ToUpperInvariant() } | Where-Object { $_ })
+}
+elseif ($RecordType.Trim().Length -gt 0) {
+    $script:RequestedRecordTypes = @($RecordType.Trim().ToUpperInvariant())
+}
+else {
+    $script:RequestedRecordTypes = @("A")
+}
+$script:RequestedRecordTypes = @($script:RequestedRecordTypes | Select-Object -Unique)
+foreach ($type in $script:RequestedRecordTypes) {
+    if ($type -notin @("A", "AAAA", "CNAME")) {
+        throw "Unsupported record type: $type"
+    }
+}
+
 New-Item -ItemType Directory -Force $OutputPath, $RawPath | Out-Null
 
 $script:Metrics = @()
@@ -157,7 +220,8 @@ $summary = [ordered]@{
     domain = $RootDomain
     dictionary = $DictionaryPath
     resolvers_file = $ResolversPath
-    record_type = $RecordType
+    record_type = ($script:RequestedRecordTypes -join ",")
+    record_types = $script:RequestedRecordTypes
     hashmap_size = $HashmapSize
     candidate_count = 0
     hits = 0
@@ -276,6 +340,7 @@ try {
         Write-HostSet $script:HitHosts $hitsFile
     }
     $summary.hits = $script:HitHosts.Count
+    $summary.record_counts = Get-MassdnsRecordCounts $massdnsFile
     $summary.files = [ordered]@{
         candidates = $candidatesFile
         massdns = $massdnsFile
@@ -306,6 +371,7 @@ finally {
         "- Status: $($summary.status)",
         "- Engine: massdns-direct",
         "- Domain: $RootDomain",
+        "- Record types: $($script:RequestedRecordTypes -join ',')",
         "- Candidates: $($summary.candidate_count)",
         "- Hits: $($summary.hits)",
         "- Total elapsed: ${totalElapsed}s",
@@ -330,6 +396,20 @@ finally {
     )
     foreach ($metric in $script:Metrics) {
         $md += "| $($metric.step) | $($metric.elapsed_seconds)s | $($metric.exit) |"
+    }
+    $md += @(
+        "",
+        "## Record Counts",
+        "",
+        "| Type | Count |",
+        "| --- | ---: |"
+    )
+    foreach ($type in $script:RequestedRecordTypes) {
+        $count = 0
+        if ($summary.record_counts -and $summary.record_counts.Contains($type)) {
+            $count = $summary.record_counts[$type]
+        }
+        $md += "| $type | $count |"
     }
     $md | Set-Content -Path $summaryMdFile -Encoding utf8
 }

@@ -6,7 +6,7 @@
   },
   "next_id": 51,
   "created_at": "2026-06-02T08:08:11+00:00",
-  "updated_at": "2026-06-04T03:25:42+00:00",
+  "updated_at": "2026-06-04T03:55:31+00:00",
   "agents": [
     {
       "id": "codex-00",
@@ -37,9 +37,9 @@
       "task_id": "",
       "lease_expires_at": "",
       "created_at": "2026-06-02T10:30:38+00:00",
-      "updated_at": "2026-06-04T03:25:34+00:00",
+      "updated_at": "2026-06-04T03:55:13+00:00",
       "claimed_at": "2026-06-02T10:30:38+00:00",
-      "released_at": "2026-06-04T03:25:34+00:00"
+      "released_at": "2026-06-04T03:55:13+00:00"
     },
     {
       "id": "claude-code",
@@ -103,29 +103,6 @@
       "leftovers": "",
       "created_at": "2026-06-03T02:33:34+00:00",
       "updated_at": "2026-06-03T02:33:34+00:00",
-      "lock_owner": "",
-      "lease_expires_at": ""
-    },
-    {
-      "id": "T-0050",
-      "title": "增强主动 DNS 的 AAAA 与 NODATA 可选复核",
-      "description": "",
-      "priority": "P2",
-      "status": "inbox",
-      "lane": "默认",
-      "source": "review",
-      "owner_agent": "",
-      "scope": [],
-      "verify_scope": [],
-      "depends_on": [],
-      "acceptance": [
-        "评估 active-dns-massdns.ps1 和 pents active-dns 是否需要增加可选 A/AAAA/CNAME 多记录查询或 dnsx NODATA 复核；默认主链路仍保持 massdns direct 精简快速；输出需继续记录耗时、命中数和差异说明。"
-      ],
-      "verification": "",
-      "deferred_verification": "",
-      "leftovers": "",
-      "created_at": "2026-06-04T03:16:52+00:00",
-      "updated_at": "2026-06-04T03:16:52+00:00",
       "lock_owner": "",
       "lease_expires_at": ""
     }
@@ -1847,6 +1824,38 @@
       "started_at": "2026-06-04T03:21:34+00:00",
       "completed_at": "2026-06-04T03:25:34+00:00",
       "archived_at": "2026-06-04T03:25:42+00:00"
+    },
+    {
+      "id": "T-0050",
+      "title": "增强主动 DNS 的 AAAA 与 NODATA 可选复核",
+      "description": "",
+      "priority": "P2",
+      "status": "archived",
+      "lane": "默认",
+      "source": "review",
+      "owner_agent": "codex",
+      "scope": [
+        "cli/src/pents",
+        "docs/当前状态.md",
+        "tests",
+        "tools/recon/active-dns-massdns.ps1"
+      ],
+      "verify_scope": [],
+      "depends_on": [],
+      "acceptance": [
+        "评估 active-dns-massdns.ps1 和 pents active-dns 是否需要增加可选 A/AAAA/CNAME 多记录查询或 dnsx NODATA 复核；默认主链路仍保持 massdns direct 精简快速；输出需继续记录耗时、命中数和差异说明。"
+      ],
+      "verification": "已实现可选主动 DNS 复核增强：pents active-dns 新增 --record-types A,AAAA,CNAME 和 --nodata-check；默认仍为 massdns direct + A 记录精简链路；tools/recon/active-dns-massdns.ps1 支持 RecordTypes 多记录类型并写入 record_counts；可选 dnsx NOERROR/NODATA 复核会记录 elapsed、massdns_hits、dnsx_noerror_lines 和 possible_nodata_or_non_address_diff。验证：uv run --project cli python -X utf8 -m unittest discover -s tests 通过 14 项；uv run --project cli python -m compileall cli/src 通过；pents active-dns 示例计划生成通过；PowerShell 脚本 ParseFile 语法检查通过。未执行真实 DNS 扫描。",
+      "deferred_verification": "",
+      "leftovers": "T-0022 仍需用户确认 HTTP 授权窗口、请求速率和实际入口后再交给 Claude Code 做低频 HTTP/CDN/服务指纹验证；T-0032 字典分层治理仍保留。",
+      "created_at": "2026-06-04T03:16:52+00:00",
+      "updated_at": "2026-06-04T03:55:31+00:00",
+      "lock_owner": "",
+      "lease_expires_at": "",
+      "locked_at": "2026-06-04T03:49:54+00:00",
+      "started_at": "2026-06-04T03:49:54+00:00",
+      "completed_at": "2026-06-04T03:55:13+00:00",
+      "archived_at": "2026-06-04T03:55:31+00:00"
     }
   ]
 }

@@ -453,6 +453,20 @@ def powershell_array_literal(values: list[str]) -> str:
     return "@(" + ", ".join(shell_quote(value) for value in values) + ")"
 
 
+def parse_dns_record_types(value: str) -> list[str]:
+    allowed = {"A", "AAAA", "CNAME"}
+    record_types: list[str] = []
+    for part in value.split(","):
+        item = part.strip().upper()
+        if not item:
+            continue
+        if item not in allowed:
+            raise SystemExit(f"Unsupported DNS record type for active-dns: {item}")
+        if item not in record_types:
+            record_types.append(item)
+    return record_types or ["A"]
+
+
 def command_tool(root: Path, name: str) -> str:
     local_path = find_local_tool(root, name)
     if local_path:
@@ -512,6 +526,13 @@ def active_dns_required_tools(engine: str) -> list[str]:
     else:
         tools.append("dnsx")
     return sorted(set(tools), key=tools.index)
+
+
+def active_dns_effective_required_tools(engine: str, nodata_check: bool) -> list[str]:
+    tools = active_dns_required_tools(engine)
+    if nodata_check and "dnsx" not in tools:
+        tools.append("dnsx")
+    return tools
 
 
 def active_dns_paths(root: Path, args: argparse.Namespace) -> tuple[Path, Path, Path | None]:
@@ -581,6 +602,7 @@ def active_dns_massdns_command(
     canary_targets: list[str],
     nx_target: str,
     hashmap_size: str,
+    record_types: list[str],
 ) -> str:
     script = shell_quote(path_text(root, root / "tools" / "recon" / "active-dns-massdns.ps1"))
     massdns = command_tool(root, "massdns")
@@ -603,10 +625,48 @@ def active_dns_massdns_command(
         massdns,
         "-HashmapSize",
         hashmap_size,
+        "-RecordTypes",
+        powershell_array_literal(record_types),
     ]
     if canary_targets:
         parts.extend(["-Canary", powershell_array_literal(canary_targets)])
     return " ".join(parts)
+
+
+def active_dns_nodata_command(
+    domain: str,
+    raw_dir: Path,
+    root: Path,
+    resolvers_csv: str,
+    verify_retry: str,
+    verify_timeout: str,
+) -> str:
+    dnsx_cmd = command_tool(root, "dnsx")
+    candidates = shell_quote(path_text(root, raw_dir / "active-dns-candidates.txt"))
+    hits = shell_quote(path_text(root, raw_dir / "active-dns-hits.txt"))
+    nodata = shell_quote(path_text(root, raw_dir / "active-dns-nodata-dnsx.jsonl"))
+    return "\n".join(
+        [
+            "$sw = [System.Diagnostics.Stopwatch]::StartNew()",
+            (
+                f"& {dnsx_cmd} -silent -l {candidates} -r {shell_quote(resolvers_csv)} "
+                f"-a -aaaa -cname -json -rcode noerror -retry {verify_retry} "
+                f"-timeout {verify_timeout} -o {nodata}"
+            ),
+            "$status = $LASTEXITCODE",
+            "$sw.Stop()",
+            f"$massdnsHits = if (Test-Path {hits}) {{ (Get-Content {hits} | Measure-Object -Line).Lines }} else {{ 0 }}",
+            f"$dnsxNoerror = if (Test-Path {nodata}) {{ (Get-Content {nodata} | Measure-Object -Line).Lines }} else {{ 0 }}",
+            "$possibleNodata = [Math]::Max(0, $dnsxNoerror - $massdnsHits)",
+            "$elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 3)",
+            (
+                f"Write-Host \"nodata-check complete: domain={domain} "
+                "elapsed=${elapsed}s; exit=$status; massdns_hits=$massdnsHits; "
+                "dnsx_noerror_lines=$dnsxNoerror; possible_nodata_or_non_address_diff=$possibleNodata\""
+            ),
+            'if ($status -ne 0) { throw "dnsx nodata check failed: exit=$status" }',
+        ]
+    )
 
 
 def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Path, str]]]:
@@ -625,6 +685,9 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
     nonce = args.nonce or f"nx-{datetime.now().strftime('%Y%m%d%H%M%S')}"
     nx_targets = [active_dns_target(nonce, domain)]
     engine = select_active_dns_engine(root, args.engine)
+    record_types = parse_dns_record_types(args.record_types)
+    if args.nodata_check and engine != "massdns":
+        raise SystemExit("--nodata-check currently requires massdns direct because it reuses active-dns-candidates.txt")
     output_dir, raw_dir, project = active_dns_paths(root, args)
     resolvers_file = output_dir / "active-dns-resolvers.txt"
     canary_file = output_dir / "active-dns-canary-targets.txt"
@@ -635,12 +698,16 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
     verify_file = raw_dir / "active-dns-verify.jsonl"
     canary_raw = raw_dir / "active-dns-canary.jsonl"
     nx_raw = raw_dir / "active-dns-nxdomain.jsonl"
+    nodata_file = raw_dir / "active-dns-nodata-dnsx.jsonl"
 
     tool_rows = ["| 工具 | 状态 | 来源 | 说明 |", "| --- | --- | --- | --- |"]
+    required_tools = active_dns_effective_required_tools(engine, args.nodata_check)
     for name in ("massdns", "puredns", "dnsx", "shuffledns"):
         path, source = find_recon_tool(root, name)
         status = "OK" if path else "MISSING"
-        note = "当前引擎需要" if name in active_dns_required_tools(engine) else "备用/参考"
+        note = "当前引擎需要" if name in required_tools else "备用/参考"
+        if args.nodata_check and name == "dnsx":
+            note = "可选 NODATA 复核需要"
         tool_rows.append(f"| {name} | {status} | {source or '-'} | {note} |")
 
     commands: list[tuple[str, str, str]] = []
@@ -658,6 +725,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
                     canary_targets,
                     nx_targets[0],
                     args.hashmap_size,
+                    record_types,
                 ),
                 "powershell",
             )
@@ -725,6 +793,14 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
                 "bash",
             )
         )
+    if args.nodata_check:
+        commands.append(
+            (
+                "可选 dnsx NOERROR/NODATA 复核",
+                active_dns_nodata_command(domain, raw_dir, root, resolvers_csv, args.verify_retry, args.verify_timeout),
+                "powershell",
+            )
+        )
     if project:
         evidence_path = hits_file if engine == "massdns" else verify_file
         commands.append(
@@ -738,6 +814,18 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
                 "bash",
             )
         )
+        if args.nodata_check:
+            commands.append(
+                (
+                    "NODATA 复核证据登记",
+                    (
+                        f"uv run --project cli pents evidence {shell_quote(project.name)} {shell_quote(path_text(root, nodata_file))} "
+                        f"--type active-dns-nodata --target {shell_quote(domain)} --file {shell_quote(path_text(root, nodata_file))} "
+                        "--notes 'optional dnsx noerror/nodata review; compare with massdns hits'"
+                    ),
+                    "bash",
+                )
+            )
 
     command_lines = []
     for title, command, language in commands:
@@ -745,6 +833,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         command_lines.extend([f"### {title}", "", f"```{language}", rendered_command, "```", ""])
 
     canary_text = ", ".join(canary_targets) if canary_targets else "未提供；正式执行前必须补充至少 1 个已知存在子域，例如 ai.<domain>"
+    nodata_text = "开启；对候选 FQDN 追加 dnsx NOERROR/NODATA 复核，可能显著增加耗时" if args.nodata_check else "关闭；默认只输出可解析入口命中"
     lines = [
         "# 主动 DNS 执行计划",
         "",
@@ -753,8 +842,10 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         f"- 根域：`{domain}`",
         f"- 字典：`{path_text(root, dict_path)}`（{count_lines(dict_path)} 行）",
         f"- Resolver：`{resolvers_csv}`",
+        f"- 查询记录类型：`{','.join(record_types)}`",
         f"- massdns hashmap size：`{args.hashmap_size}`",
         f"- 兼容参数：dnsx retry=`{args.retry}`、timeout=`{args.timeout}`；puredns rate limit=`{args.rate_limit}` qps",
+        f"- NODATA 复核：{nodata_text}",
         f"- Canary：{canary_text}",
         f"- 随机 NXDOMAIN：`{nx_targets[0]}`",
         f"- 选择引擎：`{active_dns_engine_label(engine)}`",
@@ -762,9 +853,10 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         "## 工具链",
         "",
         "- 默认主链路：`massdns direct`，先生成候选文件，再把候选文件作为 massdns 输入。",
+        "- 默认只查询 `A` 记录；如需 IPv6/CNAME 入口线索，显式使用 `--record-types A,AAAA,CNAME`。",
         "- 脚本内置流程：canary 校验、resolver 自检、NXDOMAIN/wildcard 检查、候选生成、完整枚举、命中提取。",
         "- `puredns` 只作为可选 wrapper/人工诊断，不再让 Claude Code 默认执行，避免 puredns -> massdns stdin pipe 卡死。",
-        "- `dnsx` 只作为可选诊断工具，不参与默认主动 DNS 执行计划。",
+        "- `dnsx` 只作为可选诊断工具；只有开启 `--nodata-check` 时才追加 NOERROR/NODATA 复核。",
         "- 扫描脚本会记录每步 `elapsed`、退出码、候选数、命中数和 summary。",
         "- Windows/Claude Code 场景默认使用 PowerShell 脚本，不使用 Bash 管道。",
         "",
@@ -786,6 +878,7 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         f"- massdns 原始输出：`{path_text(root, raw_dir / 'active-dns-massdns.txt')}`",
         f"- metrics：`{path_text(root, output_dir / 'active-dns-metrics.json')}`",
         f"- summary：`{path_text(root, output_dir / 'active-dns-summary.json')}`",
+        f"- 可选 NODATA 复核：`{path_text(root, nodata_file)}`",
         "",
         "## 执行命令",
         "",
@@ -796,6 +889,8 @@ def build_active_dns_plan(args: argparse.Namespace) -> tuple[str, list[tuple[Pat
         "- Canary 结果：待执行后填写。",
         "- NXDOMAIN/wildcard 结果：待执行后填写。",
         "- Resolver 剔除情况：待执行后填写。",
+        "- 记录类型差异：待执行后填写 A/AAAA/CNAME 命中差异。",
+        "- dnsx NOERROR/NODATA 复核：未开启或待执行后填写；需对比 `dnsx_noerror_lines` 与 `massdns_hits`。",
         "- 命中数量和新增资产：待执行后填写。",
         "- 证据编号：待执行后填写。",
     ]
@@ -1754,6 +1849,7 @@ def build_parser() -> argparse.ArgumentParser:
     active_dns_parser.add_argument("--canary", action="append", default=[], help="known existing subdomain label or FQDN")
     active_dns_parser.add_argument("--nonce", default="", help="custom NXDOMAIN label for wildcard check")
     active_dns_parser.add_argument("--engine", choices=("auto", "massdns", "puredns", "shuffledns", "dnsx"), default="auto")
+    active_dns_parser.add_argument("--record-types", default="A", help="comma-separated massdns record types: A,AAAA,CNAME")
     active_dns_parser.add_argument("--threads", default="1000", help="dnsx fallback thread count")
     active_dns_parser.add_argument("--hashmap-size", default="10000", help="massdns direct concurrent lookup hashmap size")
     active_dns_parser.add_argument("--rate-limit", default="10000", help="puredns public resolver rate limit in qps")
@@ -1761,6 +1857,7 @@ def build_parser() -> argparse.ArgumentParser:
     active_dns_parser.add_argument("--timeout", default="2")
     active_dns_parser.add_argument("--verify-retry", default="2", help="dnsx retry count for final hit verification")
     active_dns_parser.add_argument("--verify-timeout", default="3", help="dnsx timeout for final hit verification")
+    active_dns_parser.add_argument("--nodata-check", action="store_true", help="append optional dnsx NOERROR/NODATA review against generated candidates")
     active_dns_parser.add_argument("--project", default="", help="project name for evidence command and saved outputs")
     active_dns_parser.add_argument("--run", default="", help="run directory name such as R002-2026-06-03-active-dns")
     active_dns_parser.add_argument("--save", action="store_true", help="save plan and helper input files")
