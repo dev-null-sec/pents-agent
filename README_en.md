@@ -116,6 +116,8 @@ flowchart LR
 
 This loop isn't figurative. Every link corresponds to actual files and scripts in the repo. `dicts/candidates/` genuinely accumulates entries discovered in real engagements. `docs/项目路线/skill质量标准.md` contains actual review criteria for skills. `review.md` records the real-world performance of every skill used.
 
+Beyond this inner loop, there's an outer loop: **intelligence intake.** `pentest-intel-hub/` continuously screens external security intel — vuln advisories, tool releases, high-quality writeups — scores them, validates them, and outputs structured suggestions: skill revisions, dict candidates, tool upgrade notes, fingerprint signals. It's not a product of each engagement, but it's the other half of the evolutionary fuel. Testing tells you what's weak. Intel tells you what's new.
+
 ## What it can do right now
 
 v0.1, already validated through authorized end-to-end test projects; public examples are kept sanitized where possible.
@@ -127,7 +129,7 @@ v0.1, already validated through authorized end-to-end test projects; public exam
 - Sub-agent collaboration: structured sub-agent output → `pents merge` → `pents review-agent-output` (scope creep detection, evidence sufficiency check, dedup)
 - Retest isolation: `runs/R001`/`R002` each self-contained, only accumulated facts merge upward
 - First feedback loop in action: the `dnsx -wd` incident led to revised active DNS procedures and skill updates; thin passive source coverage drove skill improvements
-- **Intel distillation pipeline**: `pentest-intel-hub/` — a full pipeline from source grading → 7-dimension scoring → knowledge cards → validation → export suggestions into 5 output channels, ready for intel intake
+- Intel distillation pipeline ready: `pentest-intel-hub/` — source grading → 7-dimension scoring → knowledge cards → validation → 5-channel export to the main project, ready for continuous intake
 
 **Still rough:**
 
@@ -171,6 +173,19 @@ Once more: the CLI's UI is not the command line. Its UI is natural language dire
 - `suggest-skills` — maps natural language queries to skill paths. Bridges human descriptions to the skill catalog.
 
 If the AI had to do these by hand, every session would burn tokens reminding itself "don't forget to hash the evidence file" or "make sure the Markdown table columns are aligned." Do it once in Python, it's right forever.
+
+## The engine underneath
+
+You'll see "Claude Code" all over this README. That might give the impression this system is locked into Anthropic's platform. It isn't.
+
+The architecture only needs one thing from the AI engine: **an agent that can read files, run commands, and follow rules.** Which specific agent doesn't matter.
+
+- `CLAUDE.md` is a Markdown rules file. If your agent uses a different convention — `AGENTS.md`, `CODEX.md`, `system.md` — the rules work the same.
+- `pents` is a standard Python CLI. Any agent that can invoke a shell command can use it.
+- Skills are Markdown files. Different agent, different loading mechanism, same content.
+- Templates, wordlists, project records — all Markdown and JSON. Universal formats, zero platform lock-in.
+
+We currently use Claude Code because it runs best in this stack — long context, sub-agent scheduling, skill system, and tool-use quality are hard to beat right now. But nothing is architecturally locked. **Swap in Codex, Hermes, or whatever comes next — the only changes needed are the entry-point filename and skill loading convention. The system itself doesn't need to be rebuilt.**
 
 ## How this differs
 
